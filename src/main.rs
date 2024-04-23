@@ -1,7 +1,13 @@
 use rquickjs::{
-    class::Trace, function::IntoJsFunc, Class, Context, Ctx, Exception, Function, Runtime, Error, Value
+    class::Trace, function::IntoJsFunc, Class, Context, Ctx, Function, Runtime, Error, Value
 };
 use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform};
+
+#[derive(Trace)]
+#[derive(Clone)]
+#[rquickjs::class]
+pub struct CanvasContext {
+}
 
 #[derive(Trace)]
 #[rquickjs::class]
@@ -10,6 +16,8 @@ pub struct Canvas {
     height: u32,
     #[qjs(skip_trace)]
     surface: Pixmap,
+    #[qjs(skip_trace)]
+    context: CanvasContext,
 }
 
 #[rquickjs::methods]
@@ -20,12 +28,27 @@ impl Canvas {
             width,
             height,
             surface: Pixmap::new(width, height).unwrap(),
+            context: CanvasContext::new()
         }
     }
 
-    pub fn sayhi() {
-        println!("Hello from Canvas");
+    #[qjs(rename = "toDataURL")]
+    pub fn to_data_url(&self) -> String {
+        return String::from("<DataURL>");
     }
+
+    #[qjs(rename = "getContext")]
+    pub fn get_context(&self, _context_type: String) -> CanvasContext {
+        return self.context.clone();
+    }
+}
+
+#[rquickjs::methods]
+impl CanvasContext {
+    #[qjs(constructor)]
+    pub fn new() -> Self {
+        CanvasContext { }
+    }    
 }
 
 pub fn print(msg: String) {

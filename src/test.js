@@ -1,11 +1,21 @@
 
+globalThis.console = {
+    log(txt) {
+        print(txt.toString());
+    },
+    warn(txt) {
+        print(txt.toString());
+    },
+    error(txt) {
+        print(txt.toString());
+    }
+};
+
 const word = 'world';
-print(`Hello, ${word}!`);
+console.log(`Hello, ${word}!`);
 
 // globalThis.console = {
 //     log(msg): { print(msg.toString()); },
 // };
 const c = new Canvas(100, 100);
-
-print(c.toString());
-c.sayhi();
+console.log(c.toDataURL());
