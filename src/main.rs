@@ -29,22 +29,22 @@ impl DrawContext {
     }
 
     #[qjs(rename = "fillText")]
-    pub fn fill_text(& mut self, txt: String, x: f64, y: f64) {
+    pub fn fill_text(& mut self, txtch: u32, x: f64, y: f64, scale: f64, font: i32) {
         // Get font and scale from self.font
         let stride = self.surface.width();
         let width = self.width as i32;
         let height = self.height as i32;
         let bravura_font: FontRef = FontRef::try_from_slice(include_bytes!("../Bravura.otf")).unwrap();
-        let scale = 150.0;
-        let ch = txt.chars().nth(0).expect("fillText must be given a character");
-        println!("{}", ch as u32);
-        let glyph: Glyph = bravura_font.glyph_id(ch).with_scale(scale);
+        let garamond_font: FontRef = FontRef::try_from_slice(include_bytes!("../EBGaramond-VariableFont_wght.ttf")).unwrap();
+        let chosen_font = if font == 0 { &garamond_font } else { &bravura_font };
+        let ch = char::from_u32(txtch).unwrap();
+        let glyph: Glyph = chosen_font.glyph_id(ch).with_scale(scale as f32);
         let pixels = self.surface.pixels_mut();
-        if let Some(g) = bravura_font.outline_glyph(glyph) {
+        if let Some(g) = chosen_font.outline_glyph(glyph) {
             g.draw(|xx, yy, c| {
                 let xi = xx as i32 + x as i32;
                 let yi = yy as i32 + y as i32;
-                if (xi >= 0 && xi < width && yi >= 0 && yi < height) {
+                if xi >= 0 && xi < width && yi >= 0 && yi < height {
                     let offset: usize = (yi as u32 * stride + xi as u32).try_into().unwrap();
                     let i: u8 = (c * 255.0) as u8;
                     pixels[offset] = PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap();    
