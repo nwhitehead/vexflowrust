@@ -2,7 +2,7 @@ use rquickjs::{
     class::Trace, function::IntoJsFunc, Class, Context, Ctx, Error, Function, Runtime, Value,
 };
 use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform, PremultipliedColorU8};
-use ab_glyph::{FontRef, Font, Glyph, point};
+use ab_glyph::{FontRef, Font, Glyph};
 
 #[derive(Trace)]
 #[rquickjs::class]
@@ -30,7 +30,19 @@ impl DrawContext {
 
     #[qjs(rename = "fillText")]
     pub fn fill_text(& mut self, txt: String, x: f64, y: f64) {
-
+        // Get font and scale from self.font
+        let stride = self.surface.width();
+        let bravura_font: FontRef = FontRef::try_from_slice(include_bytes!("../Bravura.otf")).unwrap();
+        let scale = 350.0;
+        let glyph: Glyph = bravura_font.glyph_id(txt.chars().nth(0).expect("fillText must be given a character")).with_scale(scale);
+        let pixels = self.surface.pixels_mut();
+        if let Some(g) = bravura_font.outline_glyph(glyph) {
+            g.draw(|xx, yy, c| {
+                let offset: usize = ((yy + y as u32) * stride + xx + x as u32).try_into().unwrap();
+                let i: u8 = (c * 255.0) as u8;
+                pixels[offset] = PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap();
+            });
+        }
     }
 
     #[qjs(rename = "beginPath")]
@@ -76,6 +88,8 @@ fn format_exception(v: Value) -> String {
 }
 
 fn main() {
+    let bravura_font: FontRef = FontRef::try_from_slice(include_bytes!("../Bravura.otf")).unwrap();
+
     let runtime = Runtime::new().unwrap();
     let ctx = Context::full(&runtime).unwrap();
     ctx.with(|ctx| {
@@ -112,16 +126,15 @@ fn main() {
     let mut pixmap = Pixmap::new(500, 500).unwrap();
     pixmap.stroke_path(&path, &paint, &stroke, Transform::identity(), None);
 
-    let font = FontRef::try_from_slice(include_bytes!("../Bravura.otf")).unwrap();
-    let q_glyph: Glyph = font.glyph_id('\u{E050}').with_scale_and_position(350.0, point(400.0, 400.0));
     let stride = pixmap.width();
+    let q_glyph: Glyph = bravura_font.glyph_id('\u{E050}').with_scale(350.0);
     let pixels = pixmap.pixels_mut();
-    if let Some(q) = font.outline_glyph(q_glyph) {
+    if let Some(q) = bravura_font.outline_glyph(q_glyph) {
         q.draw(|x, y, c| {
             let offset: usize = (y * stride + x + 100).try_into().unwrap();
             let i: u8 = (c * 255.0) as u8;
             pixels[offset] = PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap();
         });
-    }
+    }    
     pixmap.save_png("image.png").unwrap();
 }
