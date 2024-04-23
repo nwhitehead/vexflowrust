@@ -1,4 +1,4 @@
-use rquickjs::{class::Trace, Class, Context, Function, Runtime, Undefined};
+use rquickjs::{class::Trace, Class, Context, Ctx, function::IntoJsFunc, Function, Runtime, Undefined};
 use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
 #[derive(Trace)]
@@ -20,21 +20,20 @@ pub fn print(msg: String) {
     println!("{msg}");
 }
 
+fn register_function<'js, F, P>(ctx: Ctx<'js>, name: &str, func: F) where F: IntoJsFunc<'js, P> + 'js
+{
+    let global = ctx.globals();
+    let name_string = String::from(name);
+    global.set(name_string.clone(), Function::new(ctx.clone(), func).unwrap().with_name(name_string.clone()).unwrap()).unwrap();
+}
+
 fn main() {
     let runtime = Runtime::new().unwrap();
     let ctx = Context::full(&runtime).unwrap();
     ctx.with(|ctx| {
         let global = ctx.globals();
         Class::<Canvas>::define(&global).unwrap();
-        global
-            .set(
-                "print",
-                Function::new(ctx.clone(), print)
-                    .unwrap()
-                    .with_name("print")
-                    .unwrap(),
-            )
-            .unwrap();
+        register_function(ctx.clone(), "print", print);
         ctx.eval_file::<Undefined, &str>("src/test.js").unwrap();
     });
 
