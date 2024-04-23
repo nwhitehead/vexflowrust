@@ -1,13 +1,11 @@
 use rquickjs::{
-    class::Trace, function::IntoJsFunc, Class, Context, Ctx, Function, Runtime, Error, Value
+    class::Trace, function::IntoJsFunc, Class, Context, Ctx, Error, Function, Runtime, Value,
 };
 use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
-#[derive(Trace)]
-#[derive(Clone)]
+#[derive(Trace, Clone)]
 #[rquickjs::class]
-pub struct CanvasContext {
-}
+pub struct CanvasContext {}
 
 #[derive(Trace)]
 #[rquickjs::class]
@@ -28,7 +26,7 @@ impl Canvas {
             width,
             height,
             surface: Pixmap::new(width, height).unwrap(),
-            context: CanvasContext::new()
+            context: CanvasContext::new(),
         }
     }
 
@@ -47,8 +45,8 @@ impl Canvas {
 impl CanvasContext {
     #[qjs(constructor)]
     pub fn new() -> Self {
-        CanvasContext { }
-    }    
+        CanvasContext {}
+    }
 }
 
 pub fn print(msg: String) {
@@ -74,7 +72,11 @@ where
 
 fn format_exception(v: Value) -> String {
     let ex = v.as_exception().unwrap();
-    return format!("Uncaught exception: {}\n{}", ex.message().unwrap(), ex.stack().unwrap());
+    return format!(
+        "Uncaught exception: {}\n{}",
+        ex.message().unwrap(),
+        ex.stack().unwrap()
+    );
 }
 
 fn main() {
@@ -84,10 +86,10 @@ fn main() {
         let global = ctx.globals();
         Class::<Canvas>::define(&global).unwrap();
         register_function(ctx.clone(), "print", print);
-        match ctx.eval_file::<(),_>("src/test.js") {
+        match ctx.eval_file::<(), _>("src/test.js") {
             Err(Error::Exception) => println!("{}", format_exception(ctx.catch())),
             Err(e) => println!("Error! {:?}", e),
-            Ok(_) => ()
+            Ok(_) => (),
         }
     });
 
