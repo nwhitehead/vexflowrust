@@ -1,4 +1,4 @@
-use rquickjs::{Context, Function, Runtime};
+use rquickjs::{Context, Function, Runtime, Undefined};
 use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
 fn print(msg: String) {
@@ -19,6 +19,7 @@ fn main() {
                     .unwrap(),
             )
             .unwrap();
+        ctx.eval_file::<Undefined, &str>("src/test.js").unwrap();
     });
 
     let mut paint = Paint::default();
