@@ -32,17 +32,29 @@ impl DrawContext {
     pub fn fill_text(& mut self, txt: String, x: f64, y: f64) {
         // Get font and scale from self.font
         let stride = self.surface.width();
+        let width = self.width as i32;
+        let height = self.height as i32;
         let bravura_font: FontRef = FontRef::try_from_slice(include_bytes!("../Bravura.otf")).unwrap();
-        let scale = 350.0;
-        let glyph: Glyph = bravura_font.glyph_id(txt.chars().nth(0).expect("fillText must be given a character")).with_scale(scale);
+        let scale = 150.0;
+        let ch = txt.chars().nth(0).expect("fillText must be given a character");
+        println!("{}", ch as u32);
+        let glyph: Glyph = bravura_font.glyph_id(ch).with_scale(scale);
         let pixels = self.surface.pixels_mut();
         if let Some(g) = bravura_font.outline_glyph(glyph) {
             g.draw(|xx, yy, c| {
-                let offset: usize = ((yy + y as u32) * stride + xx + x as u32).try_into().unwrap();
-                let i: u8 = (c * 255.0) as u8;
-                pixels[offset] = PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap();
+                let xi = xx as i32 + x as i32;
+                let yi = yy as i32 + y as i32;
+                if (xi >= 0 && xi < width && yi >= 0 && yi < height) {
+                    let offset: usize = (yi as u32 * stride + xi as u32).try_into().unwrap();
+                    let i: u8 = (c * 255.0) as u8;
+                    pixels[offset] = PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap();    
+                }
             });
         }
+    }
+
+    pub fn save(& mut self, filename: String) {
+        self.surface.save_png(filename).unwrap();
     }
 
     #[qjs(rename = "beginPath")]
@@ -103,38 +115,38 @@ fn main() {
         }
     });
 
-    let mut paint = Paint::default();
-    paint.set_color_rgba8(0, 127, 0, 200);
-    paint.anti_alias = true;
+    // let mut paint = Paint::default();
+    // paint.set_color_rgba8(0, 127, 0, 200);
+    // paint.anti_alias = true;
 
-    let path = {
-        let mut pb = PathBuilder::new();
-        const RADIUS: f32 = 250.0;
-        const CENTER: f32 = 250.0;
-        pb.move_to(CENTER + RADIUS, CENTER);
-        for i in 1..8 {
-            let a = 2.6927937 * i as f32;
-            pb.line_to(CENTER + RADIUS * a.cos(), CENTER + RADIUS * a.sin());
-        }
-        pb.finish().unwrap()
-    };
+    // let path = {
+    //     let mut pb = PathBuilder::new();
+    //     const RADIUS: f32 = 250.0;
+    //     const CENTER: f32 = 250.0;
+    //     pb.move_to(CENTER + RADIUS, CENTER);
+    //     for i in 1..8 {
+    //         let a = 2.6927937 * i as f32;
+    //         pb.line_to(CENTER + RADIUS * a.cos(), CENTER + RADIUS * a.sin());
+    //     }
+    //     pb.finish().unwrap()
+    // };
 
-    let mut stroke = Stroke::default();
-    stroke.width = 6.0;
-    stroke.line_cap = LineCap::Round;
+    // let mut stroke = Stroke::default();
+    // stroke.width = 6.0;
+    // stroke.line_cap = LineCap::Round;
 
-    let mut pixmap = Pixmap::new(500, 500).unwrap();
-    pixmap.stroke_path(&path, &paint, &stroke, Transform::identity(), None);
+    // let mut pixmap = Pixmap::new(500, 500).unwrap();
+    // pixmap.stroke_path(&path, &paint, &stroke, Transform::identity(), None);
 
-    let stride = pixmap.width();
-    let q_glyph: Glyph = bravura_font.glyph_id('\u{E050}').with_scale(350.0);
-    let pixels = pixmap.pixels_mut();
-    if let Some(q) = bravura_font.outline_glyph(q_glyph) {
-        q.draw(|x, y, c| {
-            let offset: usize = (y * stride + x + 100).try_into().unwrap();
-            let i: u8 = (c * 255.0) as u8;
-            pixels[offset] = PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap();
-        });
-    }    
-    pixmap.save_png("image.png").unwrap();
+    // let stride = pixmap.width();
+    // let q_glyph: Glyph = bravura_font.glyph_id('\u{E050}').with_scale(350.0);
+    // let pixels = pixmap.pixels_mut();
+    // if let Some(q) = bravura_font.outline_glyph(q_glyph) {
+    //     q.draw(|x, y, c| {
+    //         let offset: usize = (y * stride + x + 100).try_into().unwrap();
+    //         let i: u8 = (c * 255.0) as u8;
+    //         pixels[offset] = PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap();
+    //     });
+    // }    
+    // pixmap.save_png("image.png").unwrap();
 }

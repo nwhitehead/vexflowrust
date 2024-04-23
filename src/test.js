@@ -23,9 +23,8 @@ globalThis.console = {
 const word = 'world';
 console.log(`Hello, ${word}!`);
 
-// globalThis.console = {
-//     log(msg): { print(msg.toString()); },
-// };
-const c = new DrawContext(100, 100);
+const c = new DrawContext(1024, 800);
 c.font = '30pt Bravura';
 console.log(c.font);
+c.fillText('\ue050', 100, -20);
+c.save('image.png');
