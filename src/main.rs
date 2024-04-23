@@ -1,5 +1,5 @@
 use rquickjs::{
-    class::Trace, function::IntoJsFunc, Class, Context, Ctx, Function, Runtime, Undefined,
+    class::Trace, function::IntoJsFunc, Class, Context, Ctx, Exception, Function, Runtime, Error, Value
 };
 use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
@@ -45,6 +45,11 @@ where
         .unwrap();
 }
 
+fn format_exception(v: Value) -> String {
+    let ex = v.as_exception().unwrap();
+    return format!("Uncaught exception: {}\n{}", ex.message().unwrap(), ex.stack().unwrap());
+}
+
 fn main() {
     let runtime = Runtime::new().unwrap();
     let ctx = Context::full(&runtime).unwrap();
@@ -52,7 +57,14 @@ fn main() {
         let global = ctx.globals();
         Class::<Canvas>::define(&global).unwrap();
         register_function(ctx.clone(), "print", print);
-        ctx.eval_file::<Undefined, &str>("src/test.js").unwrap();
+        if let Err(Error::Exception) = ctx.eval::<(),_>("throw 3"){
+            assert_eq!(ctx.catch().as_int(),Some(3));
+        }
+        match ctx.eval_file::<(),_>("src/test.js") {
+            Err(Error::Exception) => println!("{}", format_exception(ctx.catch())),
+            Err(e) => println!("Error! {:?}", e),
+            Ok(_) => ()
+        }
     });
 
     let mut paint = Paint::default();
