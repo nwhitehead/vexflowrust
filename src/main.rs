@@ -1,8 +1,26 @@
-use tiny_skia::*;
+use rquickjs::{Context, Function, Runtime};
+use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
-// Based on https://fiddle.skia.org/c/@compose_path
+fn print(msg: String) {
+    println!("{msg}");
+}
 
 fn main() {
+    let runtime = Runtime::new().unwrap();
+    let ctx = Context::full(&runtime).unwrap();
+    ctx.with(|ctx| {
+        let global = ctx.globals();
+        global
+            .set(
+                "print",
+                Function::new(ctx.clone(), print)
+                    .unwrap()
+                    .with_name("print")
+                    .unwrap(),
+            )
+            .unwrap();
+    });
+
     let mut paint = Paint::default();
     paint.set_color_rgba8(0, 127, 0, 200);
     paint.anti_alias = true;
