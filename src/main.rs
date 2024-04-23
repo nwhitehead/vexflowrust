@@ -1,4 +1,6 @@
-use rquickjs::{class::Trace, Class, Context, Ctx, function::IntoJsFunc, Function, Runtime, Undefined};
+use rquickjs::{
+    class::Trace, function::IntoJsFunc, Class, Context, Ctx, Function, Runtime, Undefined,
+};
 use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
 #[derive(Trace)]
@@ -20,11 +22,21 @@ pub fn print(msg: String) {
     println!("{msg}");
 }
 
-fn register_function<'js, F, P>(ctx: Ctx<'js>, name: &str, func: F) where F: IntoJsFunc<'js, P> + 'js
+fn register_function<'js, F, P>(ctx: Ctx<'js>, name: &str, func: F)
+where
+    F: IntoJsFunc<'js, P> + 'js,
 {
     let global = ctx.globals();
     let name_string = String::from(name);
-    global.set(name_string.clone(), Function::new(ctx.clone(), func).unwrap().with_name(name_string.clone()).unwrap()).unwrap();
+    global
+        .set(
+            name_string.clone(),
+            Function::new(ctx.clone(), func)
+                .unwrap()
+                .with_name(name_string.clone())
+                .unwrap(),
+        )
+        .unwrap();
 }
 
 fn main() {
