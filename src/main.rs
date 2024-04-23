@@ -22,6 +22,10 @@ impl Canvas {
             surface: Pixmap::new(width, height).unwrap(),
         }
     }
+
+    pub fn sayhi() {
+        println!("Hello from Canvas");
+    }
 }
 
 pub fn print(msg: String) {
@@ -57,9 +61,6 @@ fn main() {
         let global = ctx.globals();
         Class::<Canvas>::define(&global).unwrap();
         register_function(ctx.clone(), "print", print);
-        if let Err(Error::Exception) = ctx.eval::<(),_>("throw 3"){
-            assert_eq!(ctx.catch().as_int(),Some(3));
-        }
         match ctx.eval_file::<(),_>("src/test.js") {
             Err(Error::Exception) => println!("{}", format_exception(ctx.catch())),
             Err(e) => println!("Error! {:?}", e),
