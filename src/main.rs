@@ -2,50 +2,43 @@ use rquickjs::{
     class::Trace, function::IntoJsFunc, Class, Context, Ctx, Error, Function, Runtime, Value,
 };
 use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform};
-
-#[derive(Trace, Clone)]
-#[rquickjs::class]
-pub struct CanvasContext {}
+use ab_glyph::{FontRef, Font, Glyph, point};
 
 #[derive(Trace)]
 #[rquickjs::class]
-pub struct Canvas {
+pub struct DrawContext {
     width: u32,
     height: u32,
     #[qjs(skip_trace)]
     surface: Pixmap,
-    #[qjs(skip_trace)]
-    context: CanvasContext,
+    font: String,
+    in_path: bool,
 }
 
 #[rquickjs::methods]
-impl Canvas {
+impl DrawContext {
     #[qjs(constructor)]
     pub fn new(width: u32, height: u32) -> Self {
-        Canvas {
+        DrawContext {
             width,
             height,
             surface: Pixmap::new(width, height).unwrap(),
-            context: CanvasContext::new(),
+            font: "".to_string(),
+            in_path: false,
         }
     }
 
-    #[qjs(rename = "toDataURL")]
-    pub fn to_data_url(&self) -> String {
-        return String::from("<DataURL>");
+    pub fn fillText(& mut self, txt: String, x: f64, y: f64) {
     }
 
-    #[qjs(rename = "getContext")]
-    pub fn get_context(&self, _context_type: String) -> CanvasContext {
-        return self.context.clone();
+    pub fn begin_path(& mut self) {
+        assert!(!self.in_path);
+        self.in_path = true;
     }
-}
 
-#[rquickjs::methods]
-impl CanvasContext {
-    #[qjs(constructor)]
-    pub fn new() -> Self {
-        CanvasContext {}
+    pub fn fill(& mut self) {
+        assert!(self.in_path);
+        self.in_path = false;
     }
 }
 
@@ -84,7 +77,7 @@ fn main() {
     let ctx = Context::full(&runtime).unwrap();
     ctx.with(|ctx| {
         let global = ctx.globals();
-        Class::<Canvas>::define(&global).unwrap();
+        Class::<DrawContext>::define(&global).unwrap();
         register_function(ctx.clone(), "print", print);
         match ctx.eval_file::<(), _>("src/test.js") {
             Err(Error::Exception) => println!("{}", format_exception(ctx.catch())),

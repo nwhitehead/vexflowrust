@@ -1,13 +1,22 @@
 
+function anyToString(v) {
+    if (v === undefined) {
+        return 'undefined';
+    }
+    if (v === null) {
+        return 'null';
+    }
+    return v.toString();
+}
 globalThis.console = {
     log(txt) {
-        print(txt.toString());
+        print(anyToString(txt));
     },
     warn(txt) {
-        print(txt.toString());
+        print(anyToString(txt));
     },
     error(txt) {
-        print(txt.toString());
+        print(anyToString(txt));
     }
 };
 
@@ -17,5 +26,6 @@ console.log(`Hello, ${word}!`);
 // globalThis.console = {
 //     log(msg): { print(msg.toString()); },
 // };
-const c = new Canvas(100, 100);
-console.log(c.toDataURL());
+const c = new DrawContext(100, 100);
+c.font = '30pt Bravura';
+console.log(c.font);
