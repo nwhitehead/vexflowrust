@@ -1,7 +1,7 @@
 use rquickjs::{
     class::Trace, function::IntoJsFunc, Class, Context, Ctx, Error, Function, Runtime, Value,
 };
-use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform};
+use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform, PremultipliedColorU8};
 use ab_glyph::{FontRef, Font, Glyph, point};
 
 #[derive(Trace)]
@@ -28,9 +28,12 @@ impl DrawContext {
         }
     }
 
-    pub fn fillText(& mut self, txt: String, x: f64, y: f64) {
+    #[qjs(rename = "fillText")]
+    pub fn fill_text(& mut self, txt: String, x: f64, y: f64) {
+
     }
 
+    #[qjs(rename = "beginPath")]
     pub fn begin_path(& mut self) {
         assert!(!self.in_path);
         self.in_path = true;
@@ -108,5 +111,17 @@ fn main() {
 
     let mut pixmap = Pixmap::new(500, 500).unwrap();
     pixmap.stroke_path(&path, &paint, &stroke, Transform::identity(), None);
+
+    let font = FontRef::try_from_slice(include_bytes!("../Bravura.otf")).unwrap();
+    let q_glyph: Glyph = font.glyph_id('\u{E050}').with_scale_and_position(350.0, point(400.0, 400.0));
+    let stride = pixmap.width();
+    let pixels = pixmap.pixels_mut();
+    if let Some(q) = font.outline_glyph(q_glyph) {
+        q.draw(|x, y, c| {
+            let offset: usize = (y * stride + x + 100).try_into().unwrap();
+            let i: u8 = (c * 255.0) as u8;
+            pixels[offset] = PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap();
+        });
+    }
     pixmap.save_png("image.png").unwrap();
 }
