@@ -1,7 +1,22 @@
-use rquickjs::{Context, Function, Runtime, Undefined};
+use rquickjs::{class::Trace, Class, Context, Function, Runtime, Undefined};
 use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
-fn print(msg: String) {
+#[derive(Trace)]
+#[rquickjs::class]
+pub struct Canvas {
+    width: i32,
+    height: i32,
+}
+
+#[rquickjs::methods]
+impl Canvas {
+    #[qjs(constructor)]
+    pub fn new(width: i32, height: i32) -> Self {
+        Canvas { width, height }
+    }
+}
+
+pub fn print(msg: String) {
     println!("{msg}");
 }
 
@@ -10,6 +25,7 @@ fn main() {
     let ctx = Context::full(&runtime).unwrap();
     ctx.with(|ctx| {
         let global = ctx.globals();
+        Class::<Canvas>::define(&global).unwrap();
         global
             .set(
                 "print",
