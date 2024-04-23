@@ -6,15 +6,21 @@ use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform};
 #[derive(Trace)]
 #[rquickjs::class]
 pub struct Canvas {
-    width: i32,
-    height: i32,
+    width: u32,
+    height: u32,
+    #[qjs(skip_trace)]
+    surface: Pixmap,
 }
 
 #[rquickjs::methods]
 impl Canvas {
     #[qjs(constructor)]
-    pub fn new(width: i32, height: i32) -> Self {
-        Canvas { width, height }
+    pub fn new(width: u32, height: u32) -> Self {
+        Canvas {
+            width,
+            height,
+            surface: Pixmap::new(width, height).unwrap(),
+        }
     }
 }
 
