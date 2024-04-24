@@ -1,4 +1,4 @@
-use ab_glyph::{Font, FontVec, ScaleFont, PxScaleFont};
+use ab_glyph::{Glyph, Font, FontVec, ScaleFont, PxScaleFont};
 use rquickjs::{
     class::Trace,
     context::EvalOptions,
@@ -32,6 +32,19 @@ impl FontLibrary {
         };
         let scale = chosen_font.pt_to_px_scale(size as f32).unwrap();
         return chosen_font.as_scaled(scale);    
+    }
+
+    pub fn lookup_glyph(&self, codepoint:u32, fontname: &str, size: f64) -> (PxScaleFont<&FontVec>, Glyph) {
+        let ch = char::from_u32(codepoint).unwrap();
+        let chosen_font = if fontname == "Bravura" {
+            &self.bravura_font
+        } else {
+            &self.default_font
+        };
+        let scale = chosen_font.pt_to_px_scale(size as f32).unwrap();
+        let scaled_font = chosen_font.as_scaled(scale);
+        let glyph = scaled_font.scaled_glyph(ch);
+        return (scaled_font, glyph);
     }
 }
 
@@ -81,17 +94,13 @@ impl DrawContext {
 
     #[qjs(rename = "measureText")]
     pub fn measure_text(&mut self, txtch: u32, size: f64, font: String) -> std::vec::Vec<f64> {
-        let scaled_font = self.font_library.lookup(&font, size * self.zoom);
-        let ch = char::from_u32(txtch).unwrap();
-        let glyph_id = scaled_font.font.glyph_id(ch);
-        let h_advance = scaled_font.h_advance(glyph_id);
-        let v_advance = scaled_font.v_advance(glyph_id);
+        let (scaled_font, glyph) = self.font_library.lookup_glyph(txtch, &font, size * self.zoom);
         let ascent = scaled_font.ascent();
         let descent = scaled_font.descent();
-        let glyph = scaled_font.scaled_glyph(ch);
+        let h_advance = scaled_font.h_advance(glyph.id);
+        let v_advance = scaled_font.v_advance(glyph.id);
         if let Some(g) = scaled_font.outline_glyph(glyph) {
             let bounds = g.px_bounds();
-            //return vec![/*h_advance as f64*/(bounds.max.x - bounds.min.x) as f64, v_advance as f64, ascent as f64, descent as f64, bounds.min.y as f64, bounds.max.y as f64];
             return vec![h_advance as f64, v_advance as f64, ascent as f64, descent as f64, bounds.min.y as f64, bounds.max.y as f64];
         }
         return vec![h_advance as f64, v_advance as f64, ascent as f64, descent as f64, 0.0, 0.0];
@@ -99,13 +108,10 @@ impl DrawContext {
 
     #[qjs(rename = "fillText")]
     pub fn fill_text(&mut self, txtch: u32, x: f64, y: f64, size: f64, font: String) {
-        // Get font and scale from self.font
-        let scaled_font = self.font_library.lookup(&font, size * self.zoom);
         let stride = self.surface.width();
         let width = self.width as i32;
         let height = self.height as i32;
-        let ch = char::from_u32(txtch).unwrap();
-        let glyph = scaled_font.scaled_glyph(ch);
+        let (scaled_font, glyph) = self.font_library.lookup_glyph(txtch, &font, size * self.zoom);
         let pixels = self.surface.pixels_mut();
         if let Some(g) = scaled_font.outline_glyph(glyph) {
             let bounds = g.px_bounds();
