@@ -1,7 +1,7 @@
 use rquickjs::{
     class::Trace, function::IntoJsFunc, Class, Context, Ctx, Error, Function, Runtime, Value,
 };
-use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform, PremultipliedColorU8};
+use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, PremultipliedColorU8, Transform};
 use ab_glyph::{FontRef, Font, Glyph};
 
 #[derive(Trace)]
@@ -13,6 +13,8 @@ pub struct DrawContext {
     surface: Pixmap,
     font: String,
     in_path: bool,
+    #[qjs(skip_trace)]
+    path: Option<PathBuilder>,
 }
 
 #[rquickjs::methods]
@@ -25,6 +27,7 @@ impl DrawContext {
             surface: Pixmap::new(width, height).unwrap(),
             font: "".to_string(),
             in_path: false,
+            path: None,
         }
     }
 
@@ -34,8 +37,8 @@ impl DrawContext {
         let stride = self.surface.width();
         let width = self.width as i32;
         let height = self.height as i32;
-        let bravura_font: FontRef = FontRef::try_from_slice(include_bytes!("../Bravura.otf")).unwrap();
-        let garamond_font: FontRef = FontRef::try_from_slice(include_bytes!("../EBGaramond-VariableFont_wght.ttf")).unwrap();
+        let bravura_font: FontRef = FontRef::try_from_slice(include_bytes!("../fonts/Bravura.otf")).unwrap();
+        let garamond_font: FontRef = FontRef::try_from_slice(include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf")).unwrap();
         let chosen_font = if font == 0 { &garamond_font } else { &bravura_font };
         let ch = char::from_u32(txtch).unwrap();
         let glyph: Glyph = chosen_font.glyph_id(ch).with_scale(scale as f32);
@@ -61,6 +64,36 @@ impl DrawContext {
     pub fn begin_path(& mut self) {
         assert!(!self.in_path);
         self.in_path = true;
+        self.path = Some(PathBuilder::new());
+    }
+
+    #[qjs(rename = "moveTo")]
+    pub fn move_to(& mut self, x: f64, y: f64) {
+        assert!(self.in_path);
+        assert!(self.path.is_some());
+        self.path.as_mut().expect("path must be created").move_to(x as f32, y as f32);
+    }
+
+    #[qjs(rename = "lineTo")]
+    pub fn line_to(& mut self, x: f64, y: f64) {
+        assert!(self.in_path);
+        assert!(self.path.is_some());
+        self.path.as_mut().expect("path must be created").line_to(x as f32, y as f32);
+    }
+
+    pub fn stroke(& mut self) {
+        assert!(self.in_path);
+        assert!(self.path.is_some());
+        // FIXME: I'm cloning the path, then removing it. How do I take ownership and drop it?
+        let final_path = self.path.as_mut().expect("path must be created").clone().finish().unwrap();
+        self.path = None;
+        let mut paint = Paint::default();
+        paint.set_color_rgba8(255, 0, 0, 255);
+        paint.anti_alias = true;
+        let mut stroke = Stroke::default();
+        stroke.width = 2.0;
+        stroke.line_cap = LineCap::Round;
+        self.surface.stroke_path(&final_path, &paint, &stroke, Transform::identity(), None);
     }
 
     pub fn fill(& mut self) {
@@ -100,8 +133,6 @@ fn format_exception(v: Value) -> String {
 }
 
 fn main() {
-    let bravura_font: FontRef = FontRef::try_from_slice(include_bytes!("../Bravura.otf")).unwrap();
-
     let runtime = Runtime::new().unwrap();
     let ctx = Context::full(&runtime).unwrap();
     ctx.with(|ctx| {

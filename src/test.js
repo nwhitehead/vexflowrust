@@ -29,5 +29,7 @@ console.log(c.font);
 c.fillText(0xe050, 100, 120, 350.0, 1);
 c.fillText('a'.charCodeAt(0), 400, 120, 150.0, 0);
 c.beginPath();
-c.fill();
+c.moveTo(400, 100);
+c.lineTo(200, 400);
+c.stroke();
 c.save('image.png');
