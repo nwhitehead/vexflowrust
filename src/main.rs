@@ -23,10 +23,15 @@ pub struct DrawContext {
     path: Option<PathBuilder>,
 }
 
-fn mix_color(left: &PremultipliedColorU8, right: &PremultipliedColorU8) -> PremultipliedColorU8 {
-    let la = left.alpha();
-    let ra = right.alpha();
-    return PremultipliedColorU8::from_rgba(0, 0, 0, std::cmp::max(la, ra)).unwrap();
+fn blend_color(src: &PremultipliedColorU8, dst: &PremultipliedColorU8) -> PremultipliedColorU8 {
+    // Blend src onto existing dst color.
+    // We know everything is premultiplied alpha for black text.
+    // Cheat and take entire color from src.
+    // Compute alpha as sum of opacities clamped to max.
+    let src_a = src.alpha();
+    let dst_a = dst.alpha();
+    let final_a = (src_a as i32 + dst_a as i32).clamp(0, 255) as u8;
+    return PremultipliedColorU8::from_rgba(src.red(), src.green(), src.blue(), final_a).unwrap();
 }
 
 #[rquickjs::methods]
@@ -83,11 +88,9 @@ impl DrawContext {
         let scale = chosen_font.pt_to_px_scale(size as f32).unwrap();
         let scaled_font = chosen_font.as_scaled(scale);
         let glyph = scaled_font.scaled_glyph(ch);
-        println!("fill_text size={}", size);
         let pixels = self.surface.pixels_mut();
         if let Some(g) = scaled_font.outline_glyph(glyph) {
             let bounds = g.px_bounds();
-            println!("bounds={:?} x,y={},{}", bounds, x, y);
             g.draw(|xx, yy, c| {
                 let xi = (xx as f32 + x as f32 + bounds.min.x) as i32;
                 let yi = (yy as f32 + y as f32 + bounds.min.y) as i32;
@@ -95,7 +98,7 @@ impl DrawContext {
                 if xi >= 0 && xi < width && yi >= 0 && yi < height {
                     let offset: usize = (yi as u32 * stride + xi as u32).try_into().unwrap();
                     let i: u8 = (c * 255.0) as u8;
-                    pixels[offset] = mix_color(&PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap(), &pixels[offset]);
+                    pixels[offset] = blend_color(&PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap(), &pixels[offset]);
                 }
             });
         }

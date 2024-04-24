@@ -3,8 +3,8 @@ import { Canvas } from "./src/wrap.js";
 import './src/vexflow-debug.js';
 
 const VF = window.VexFlow;
-const width = 1024;
-const height = 800;
+const width = 500;
+const height = 400;
 
 export async function main() {
 
