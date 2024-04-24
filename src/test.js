@@ -3,6 +3,7 @@ import _ from "./src/wrap.js";
 
 const word = 'world';
 console.log(`Hello, ${word}!`);
+assert(true, 'hi');
 
 const c = new DrawContext(1024, 800);
 c.font = '30pt Bravura';

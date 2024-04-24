@@ -128,12 +128,19 @@ where
 }
 
 fn format_exception(v: Value) -> String {
-    let ex = v.as_exception().unwrap();
-    return format!(
-        "Uncaught exception: {}\n{}",
-        ex.message().unwrap(),
-        ex.stack().unwrap()
-    );
+    println!("{}", v.is_error());
+    if v.is_error() || v.is_exception() {
+        let ex = v.as_exception().unwrap();
+        return format!(
+            "Uncaught exception: {}\n{}",
+            ex.message().unwrap(),
+            ex.stack().unwrap()
+        );
+    }
+    if v.is_string() {
+        return v.into_string().unwrap().to_string().unwrap();
+    }
+    return format!("Uncaught exception: {:?}", v);
 }
 
 fn main() {
