@@ -40,7 +40,7 @@ impl DrawContext {
         let bravura_font: FontRef = FontRef::try_from_slice(include_bytes!("../fonts/Bravura.otf")).unwrap();
         let garamond_font: FontRef = FontRef::try_from_slice(include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf")).unwrap();
         let chosen_font = if font == 0 { &garamond_font } else { &bravura_font };
-        let scaled_font = chosen_font.as_scaled(scale as f32);
+        let scaled_font = chosen_font.as_scaled(chosen_font.pt_to_px_scale(scale as f32).unwrap());
         let ch = char::from_u32(txtch).unwrap();
         let glyph: GlyphId = chosen_font.glyph_id(ch);
         let h_advance = scaled_font.h_advance(glyph);
@@ -57,7 +57,7 @@ impl DrawContext {
         let garamond_font: FontRef = FontRef::try_from_slice(include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf")).unwrap();
         let chosen_font = if font == 0 { &garamond_font } else { &bravura_font };
         let ch = char::from_u32(txtch).unwrap();
-        let glyph: Glyph = chosen_font.glyph_id(ch).with_scale(scale as f32);
+        let glyph: Glyph = chosen_font.glyph_id(ch).with_scale(chosen_font.pt_to_px_scale(scale as f32).unwrap());
         let pixels = self.surface.pixels_mut();
         if let Some(g) = chosen_font.outline_glyph(glyph) {
             g.draw(|xx, yy, c| {
