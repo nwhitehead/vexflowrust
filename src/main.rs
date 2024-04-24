@@ -24,27 +24,22 @@ impl FontLibrary {
         }
     }
 
-    pub fn lookup(&self, name: &str, size: f64) -> PxScaleFont<&FontVec> {
-        let chosen_font = if name == "Bravura" {
-            &self.bravura_font
-        } else {
-            &self.default_font
-        };
-        let scale = chosen_font.pt_to_px_scale(size as f32).unwrap();
-        return chosen_font.as_scaled(scale);    
-    }
-
-    pub fn lookup_glyph(&self, codepoint:u32, fontname: &str, size: f64) -> (PxScaleFont<&FontVec>, Glyph) {
+    pub fn lookup_glyph(&self, codepoint:u32, _fontname: &str, size: f64) -> (PxScaleFont<&FontVec>, Glyph) {
         let ch = char::from_u32(codepoint).unwrap();
-        let chosen_font = if fontname == "Bravura" {
-            &self.bravura_font
-        } else {
-            &self.default_font
-        };
+        // First try Bravura
+        let chosen_font = &self.bravura_font;
         let scale = chosen_font.pt_to_px_scale(size as f32).unwrap();
         let scaled_font = chosen_font.as_scaled(scale);
         let glyph = scaled_font.scaled_glyph(ch);
-        return (scaled_font, glyph);
+        if let Some(_) = scaled_font.outline_glyph(glyph.clone()) {
+            return (scaled_font, glyph);
+        }
+        // Fallback is default_font
+        let chosen_font = &self.default_font;
+        let scale = chosen_font.pt_to_px_scale(size as f32).unwrap();
+        let scaled_font = chosen_font.as_scaled(scale);
+        let glyph2 = scaled_font.scaled_glyph(ch);
+        return (scaled_font, glyph2);
     }
 }
 
