@@ -113,6 +113,7 @@ class CanvasContext {
     fillText(txt, x, y) {
         console.debug(`CanvasContext::fillText`);
         const { font, size } = parseFont(this.font);
+        this.ctx.fillText(txt.charCodeAt(0) || 0, x, y, size, font === 'Bravura' ? 1 : 0);
     }
     beginPath() {
         console.debug(`CanvasContext::beginPath`);

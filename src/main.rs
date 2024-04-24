@@ -23,6 +23,12 @@ pub struct DrawContext {
     path: Option<PathBuilder>,
 }
 
+fn mix_color(left: &PremultipliedColorU8, right: &PremultipliedColorU8) -> PremultipliedColorU8 {
+    let la = left.alpha();
+    let ra = right.alpha();
+    return PremultipliedColorU8::from_rgba(0, 0, 0, std::cmp::max(la, ra)).unwrap();
+}
+
 #[rquickjs::methods]
 impl DrawContext {
     #[qjs(constructor)]
@@ -58,7 +64,7 @@ impl DrawContext {
     }
 
     #[qjs(rename = "fillText")]
-    pub fn fill_text(&mut self, txtch: u32, x: f64, y: f64, scale: f64, font: i32) {
+    pub fn fill_text(&mut self, txtch: u32, x: f64, y: f64, size: f64, font: i32) {
         // Get font and scale from self.font
         let stride = self.surface.width();
         let width = self.width as i32;
@@ -74,18 +80,22 @@ impl DrawContext {
             &bravura_font
         };
         let ch = char::from_u32(txtch).unwrap();
-        let glyph: Glyph = chosen_font
-            .glyph_id(ch)
-            .with_scale(chosen_font.pt_to_px_scale(scale as f32).unwrap());
+        let scale = chosen_font.pt_to_px_scale(size as f32).unwrap();
+        let scaled_font = chosen_font.as_scaled(scale);
+        let glyph = scaled_font.scaled_glyph(ch);
+        println!("fill_text size={}", size);
         let pixels = self.surface.pixels_mut();
-        if let Some(g) = chosen_font.outline_glyph(glyph) {
+        if let Some(g) = scaled_font.outline_glyph(glyph) {
+            let bounds = g.px_bounds();
+            println!("bounds={:?} x,y={},{}", bounds, x, y);
             g.draw(|xx, yy, c| {
-                let xi = xx as i32 + x as i32;
-                let yi = yy as i32 + y as i32;
+                let xi = (xx as f32 + x as f32 + bounds.min.x) as i32;
+                let yi = (yy as f32 + y as f32 + bounds.min.y) as i32;
+                // Make sure we don't draw outside the size of pixmap
                 if xi >= 0 && xi < width && yi >= 0 && yi < height {
                     let offset: usize = (yi as u32 * stride + xi as u32).try_into().unwrap();
                     let i: u8 = (c * 255.0) as u8;
-                    pixels[offset] = PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap();
+                    pixels[offset] = mix_color(&PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap(), &pixels[offset]);
                 }
             });
         }
