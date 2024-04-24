@@ -5,7 +5,7 @@ use rquickjs::{
     },
     context::EvalOptions,
 };
-use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Rect, Stroke, PremultipliedColorU8, Transform};
+use tiny_skia::{FillRule, LineCap, Paint, PathBuilder, Pixmap, Rect, Stroke, PremultipliedColorU8, Transform};
 use ab_glyph::{FontRef, Font, Glyph, GlyphId, ScaleFont};
 
 #[derive(Trace)]
@@ -114,6 +114,19 @@ impl DrawContext {
         self.surface.stroke_path(&final_path, &paint, &stroke, Transform::identity(), None);
     }
 
+    pub fn fill(& mut self) {
+        assert!(self.in_path);
+        assert!(self.path.is_some());
+        self.in_path = false;
+        // FIXME: I'm cloning the path, then removing it. How do I take ownership and drop it?
+        let final_path = self.path.as_mut().expect("path must be created").clone().finish().unwrap();
+        self.path = None;
+        let mut paint = Paint::default();
+        paint.set_color_rgba8(0, 0, 0, 255);
+        paint.anti_alias = true;
+        self.surface.fill_path(&final_path, &paint, FillRule::Winding, Transform::identity(), None);
+    }
+
     #[qjs(rename = "fillRect")]
     pub fn fill_rect(& mut self, x: f64, y: f64, width: f64, height: f64) {
         let mut paint = Paint::default();
@@ -125,11 +138,6 @@ impl DrawContext {
             Transform::identity(),
             None
         );
-    }
-
-    pub fn fill(& mut self) {
-        assert!(self.in_path);
-        self.in_path = false;
     }
 }
 

@@ -132,6 +132,7 @@ class CanvasContext {
         console.debug(`CanvasContext::fill`);
         assert(this.inPath === true);
         this.inPath = false;
+        this.ctx.fill();
     }
     fillRect(x, y, width, height) {
         console.debug(`CanvasContext::fillRect`);
