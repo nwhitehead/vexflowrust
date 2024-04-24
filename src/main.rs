@@ -3,6 +3,7 @@ use rquickjs::{
     loader::{
         BuiltinLoader, BuiltinResolver, FileResolver, ModuleLoader, ScriptLoader,
     },
+    context::EvalOptions,
 };
 use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, PremultipliedColorU8, Transform};
 use ab_glyph::{FontRef, Font, Glyph};
@@ -151,7 +152,7 @@ fn main() {
         let global = ctx.globals();
         Class::<DrawContext>::define(&global).unwrap();
         register_function(ctx.clone(), "print", print);
-        match ctx.eval_file::<(), _>("src/test.js") {
+        match ctx.eval_file_with_options::<(), _>("src/test.js", EvalOptions { global: false, strict: true, backtrace_barrier: false }) {
             Err(Error::Exception) => println!("{}", format_exception(ctx.catch())),
             Err(e) => println!("Error! {:?}", e),
             Ok(_) => (),
