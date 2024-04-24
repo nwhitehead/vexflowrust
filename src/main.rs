@@ -1,15 +1,39 @@
-use ab_glyph::{Font, FontRef, Glyph, GlyphId, ScaleFont};
+use ab_glyph::{Font, FontVec, ScaleFont, GlyphId, PxScaleFont};
 use rquickjs::{
     class::Trace,
     context::EvalOptions,
     function::IntoJsFunc,
-    loader::{BuiltinLoader, BuiltinResolver, FileResolver, ModuleLoader, ScriptLoader},
+    loader::{BuiltinLoader, BuiltinResolver, FileResolver, ScriptLoader},
     Class, Context, Ctx, Error, Function, Runtime, Value,
 };
 use tiny_skia::{
     Color,
     FillRule, LineCap, Paint, PathBuilder, Pixmap, PremultipliedColorU8, Rect, Stroke, Transform,
 };
+
+pub struct FontLibrary {
+    bravura_font: FontVec,
+    default_font: FontVec,
+}
+
+impl FontLibrary {
+    pub fn new() -> Self {
+        FontLibrary {
+            bravura_font: FontVec::try_from_vec(include_bytes!("../fonts/Bravura.otf").to_vec()).unwrap(),
+            default_font: FontVec::try_from_vec(include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf").to_vec()).unwrap(),
+        }
+    }
+
+    pub fn lookup(&self, name: &str, size: f64) -> PxScaleFont<&FontVec> {
+        let chosen_font = if name == "Bravura" {
+            &self.bravura_font
+        } else {
+            &self.default_font
+        };
+        let scale = chosen_font.pt_to_px_scale(size as f32).unwrap();
+        return chosen_font.as_scaled(scale);    
+    }
+}
 
 #[derive(Trace)]
 #[rquickjs::class]
@@ -23,6 +47,8 @@ pub struct DrawContext {
     in_path: bool,
     #[qjs(skip_trace)]
     path: Option<PathBuilder>,
+    #[qjs(skip_trace)]
+    font_library: FontLibrary,
 }
 
 fn blend_color(src: &PremultipliedColorU8, dst: &PremultipliedColorU8) -> PremultipliedColorU8 {
@@ -49,48 +75,29 @@ impl DrawContext {
             font: "".to_string(),
             in_path: false,
             path: None,
+            font_library: FontLibrary::new(),
         }
     }
 
     #[qjs(rename = "measureText")]
-    pub fn measure_text(&mut self, txtch: u32, scale: f64, font: i32) -> std::vec::Vec<f64> {
-        let bravura_font: FontRef =
-            FontRef::try_from_slice(include_bytes!("../fonts/Bravura.otf")).unwrap();
-        let garamond_font: FontRef =
-            FontRef::try_from_slice(include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf"))
-                .unwrap();
-        let chosen_font = if font == 0 {
-            &garamond_font
-        } else {
-            &bravura_font
-        };
-        let scaled_font = chosen_font.as_scaled(chosen_font.pt_to_px_scale(scale as f32).unwrap());
+    pub fn measure_text(&mut self, txtch: u32, size: f64, font: String) -> std::vec::Vec<f64> {
+        let scaled_font = self.font_library.lookup(&font, size * self.zoom);
+        println!("{:?}", scaled_font);
         let ch = char::from_u32(txtch).unwrap();
-        let glyph: GlyphId = chosen_font.glyph_id(ch);
+        let glyph: GlyphId = scaled_font.font.glyph_id(ch);
         let h_advance = scaled_font.h_advance(glyph);
         let v_advance = scaled_font.v_advance(glyph);
         return vec![h_advance as f64, v_advance as f64];
     }
 
     #[qjs(rename = "fillText")]
-    pub fn fill_text(&mut self, txtch: u32, x: f64, y: f64, size: f64, font: i32) {
+    pub fn fill_text(&mut self, txtch: u32, x: f64, y: f64, size: f64, font: String) {
         // Get font and scale from self.font
+        let scaled_font = self.font_library.lookup(&font, size * self.zoom);
         let stride = self.surface.width();
         let width = self.width as i32;
         let height = self.height as i32;
-        let bravura_font: FontRef =
-            FontRef::try_from_slice(include_bytes!("../fonts/Bravura.otf")).unwrap();
-        let garamond_font: FontRef =
-            FontRef::try_from_slice(include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf"))
-                .unwrap();
-        let chosen_font = if font == 0 {
-            &garamond_font
-        } else {
-            &bravura_font
-        };
         let ch = char::from_u32(txtch).unwrap();
-        let scale = chosen_font.pt_to_px_scale((size * self.zoom) as f32).unwrap();
-        let scaled_font = chosen_font.as_scaled(scale);
         let glyph = scaled_font.scaled_glyph(ch);
         let pixels = self.surface.pixels_mut();
         if let Some(g) = scaled_font.outline_glyph(glyph) {

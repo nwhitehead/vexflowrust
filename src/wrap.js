@@ -82,9 +82,8 @@ globalThis.document = {
                 return {
                     measureText(txt) {
                         const { font, size } = parseFont(this.font);
-                        const fontNum = font === 'Bravura' ? 1 : 0;
                         const c = new DrawContext(1, 1, 1.0);
-                        const res = c.measureText(txt.codePointAt(0) || 0, size, fontNum);
+                        const res = c.measureText(txt.codePointAt(0) || 0, size, font);
                         return {
                             width: res[0],
                             fontBoundingBoxAscent: 10.0,
@@ -117,7 +116,7 @@ class CanvasContext {
     fillText(txt, x, y) {
         console.debug(`CanvasContext::fillText x=${x} y=${y}`);
         const { font, size } = parseFont(this.font);
-        this.ctx.fillText(txt.charCodeAt(0) || 0, x, y, size, font === 'Bravura' ? 1 : 0);
+        this.ctx.fillText(txt.charCodeAt(0) || 0, x, y, size, font);
     }
     beginPath() {
         console.debug(`CanvasContext::beginPath`);
