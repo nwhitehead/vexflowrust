@@ -56,16 +56,25 @@ function parseFont(fontname) {
 }
 
 function measureTextLocal(drawContext, txt, size) {
-    //assert(txt.length <= 1, 'cannot measure more than 1 glyph at a time');
-    const res = this.ctx.measureText(txt.codePointAt(0) || 0, size);
-    return {
-        width: res[0],
-        fontBoundingBoxAscent: res[2],
-        fontBoundingBoxDescent: res[3],
-        actualBoundingBoxAscent: res[4],
-        actualBoundingBoxDescent: res[5],
+    let res = {};
+    // Make sure txt is nonempty, measure null codepoint if given nothing
+    txt = txt || "\0";
+    for(let i = 0; i < txt.length; i++) {
+        const metrics = drawContext.measureText(txt.codePointAt(i), size);
+        if (i == 0) {
+            res = {
+                width: metrics[0],
+                fontBoundingBoxAscent: metrics[2],
+                fontBoundingBoxDescent: metrics[3],
+                actualBoundingBoxAscent: metrics[4],
+                actualBoundingBoxDescent: metrics[5],
+            };
+        } else {
+            res.width += metrics[0];
+        }
     }
-
+    console.log(`txt=${txt} width=${res.width}`);
+    return res;
 }
 
 globalThis.document = {
@@ -94,22 +103,10 @@ globalThis.document = {
             getContext(t) {
                 return {
                     measureText(txt) {
-                        txt = txt || ' ';
                         console.debug(`TempCanvasContext::measureText`);
-                        if (txt && txt.length > 1) {
-                            console.log(`TempCanvasContext::measureText too long txt=${txt}`);
-                        }
-                        //assert(txt.length <= 1, 'cannot measure more than 1 glyph at a time');
-                        const { font, size } = parseFont(this.font);
+                        const { size } = parseFont(this.font);
                         const c = new DrawContext(1, 1, 1.0);
-                        const res = c.measureText(txt.codePointAt(0) || 0, size);
-                        return {
-                            width: res[0],
-                            fontBoundingBoxAscent: res[2],
-                            fontBoundingBoxDescent: res[3],
-                            actualBoundingBoxAscent: res[4],
-                            actualBoundingBoxDescent: res[5],
-                        }
+                        return measureTextLocal(c, txt, size);
                     }
                 };
             }
@@ -138,13 +135,9 @@ class CanvasContext {
         return 1;
     }
     fillText(txt, x, y) {
-        //assert(txt.length <= 1, 'txt too long');
-        if (txt.length > 1) {
-            console.log(`fillText too long txt=${txt}`);
-        }
-        const { font, size } = parseFont(this.font);
-        console.debug(`CanvasContext::fillText x=${x} y=${y} size=${size} font=${font}`);
-        this.ctx.fillText(txt.charCodeAt(0) || 0, x + this.textOffset.x, y + this.textOffset.y, size, font);
+        const { size } = parseFont(this.font);
+        console.debug(`CanvasContext::fillText x=${x} y=${y} size=${size}`);
+        this.ctx.fillText(txt.charCodeAt(0) || 0, x + this.textOffset.x, y + this.textOffset.y, size);
     }
     beginPath() {
         console.debug(`CanvasContext::beginPath`);
@@ -168,16 +161,8 @@ class CanvasContext {
     }
     measureText(txt) {
         console.debug(`CanvasContext::measureText`);
-        assert(txt.length <= 1, 'cannot measure more than 1 glyph at a time');
-        const { font, size } = parseFont(this.font);
-        const res = this.ctx.measureText(txt.codePointAt(0) || 0, size, font);
-        return {
-            width: res[0],
-            fontBoundingBoxAscent: res[2],
-            fontBoundingBoxDescent: res[3],
-            actualBoundingBoxAscent: res[4],
-            actualBoundingBoxDescent: res[5],
-        }
+        const { size } = parseFont(this.font);
+        return measureTextLocal(this.ctx, txt, size);
     }
     closePath() {
         console.debug(`CanvasContext::closePath`);
