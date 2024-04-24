@@ -6,7 +6,7 @@ use rquickjs::{
     context::EvalOptions,
 };
 use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, PremultipliedColorU8, Transform};
-use ab_glyph::{FontRef, Font, Glyph};
+use ab_glyph::{FontRef, Font, Glyph, GlyphId, ScaleFont};
 
 #[derive(Trace)]
 #[rquickjs::class]
@@ -33,6 +33,18 @@ impl DrawContext {
             in_path: false,
             path: None,
         }
+    }
+
+    #[qjs(rename = "measureText")]
+    pub fn measure_text(& mut self, txtch: u32, scale: f64, font: i32) -> std::vec::Vec<f64> {
+        let bravura_font: FontRef = FontRef::try_from_slice(include_bytes!("../fonts/Bravura.otf")).unwrap();
+        let garamond_font: FontRef = FontRef::try_from_slice(include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf")).unwrap();
+        let chosen_font = if font == 0 { &garamond_font } else { &bravura_font };
+        let scaled_font = chosen_font.as_scaled(scale as f32);
+        let ch = char::from_u32(txtch).unwrap();
+        let glyph: GlyphId = chosen_font.glyph_id(ch);
+        let h_advance = scaled_font.h_advance(glyph);
+        return vec![h_advance as f64, 2.0];
     }
 
     #[qjs(rename = "fillText")]
