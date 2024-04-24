@@ -75,9 +75,12 @@ globalThis.document = {
                 return {
                     measureText(txt) {
                         const { font, size } = parseFont(this.font);
-                        const scale = cpp_get_font_scale(font, size) * globalFontScale;
-                        let res = cpp_measure_text(txt.codePointAt(0) || 0, font, scale);
-                        return res;
+                        const fontNum = font === 'Bravura' ? 1 : 0;
+                        const c = new DrawContext(1, 1);
+                        const res = c.measureText(txt.codePointAt(0) || 0, size, fontNum);
+                        return {
+                            width: res[0],
+                        }
                     }
                 };
             }
