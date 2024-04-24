@@ -157,6 +157,7 @@ fn format_exception(v: Value) -> String {
 }
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
     let resolver = (
         BuiltinResolver::default(),
         FileResolver::default().with_path("./"),
@@ -170,6 +171,7 @@ fn main() {
     runtime.set_loader(resolver, loader);
     ctx.with(|ctx| {
         let global = ctx.globals();
+        global.set("arg".to_string(), args[args.len() - 1].clone()).unwrap();
         Class::<DrawContext>::define(&global).unwrap();
         register_function(ctx.clone(), "print", print);
         match ctx.eval_file_with_options::<(), _>("src/test.js", EvalOptions { global: false, strict: true, backtrace_barrier: false }) {
