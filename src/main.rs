@@ -224,6 +224,19 @@ impl DrawContext {
         );
     }
 
+    #[qjs(rename = "clearRect")]
+    pub fn clear_rect(&mut self, x: f64, y: f64, width: f64, height: f64) {
+        let mut paint = Paint::default();
+        paint.set_color_rgba8(0, 0, 0, 0);
+        paint.anti_alias = true;
+        self.surface.fill_rect(
+            Rect::from_xywh((x * self.zoom) as f32, (y * self.zoom) as f32, (width * self.zoom) as f32, (height * self.zoom) as f32).unwrap(),
+            &paint,
+            Transform::identity(),
+            None,
+        );
+    }
+
     pub fn clear(&mut self, r: f64, g: f64, b: f64, a: f64) {
         self.surface.fill(Color::from_rgba(r as f32, g as f32, b as f32, a as f32).unwrap());
     }

@@ -2267,12 +2267,19 @@ class Bend extends _modifier__WEBPACK_IMPORTED_MODULE_1__.Modifier {
         let totalWidth = 0;
         for (let i = 0; i < this.phrase.length; ++i) {
             const bend = this.phrase[i];
+            console.log(`bend=${JSON.stringify(bend)}`);
             if (bend.width !== undefined) {
                 totalWidth += bend.width;
             }
             else {
                 const additionalWidth = bend.type === Bend.UP ? this.renderOptions.bendWidth : this.renderOptions.releaseWidth;
-                bend.width = Math.max(additionalWidth, measureText(bend.text)) + 3;
+                const mt = measureText(bend.text);
+                console.log(`mt=${mt}`);
+                const nw = Math.max(additionalWidth, measureText(bend.text)) + 3;
+                console.log(`nw=${nw}`);
+                console.log(`bend=${JSON.stringify(bend)}`);
+                console.log(`bend.text=${JSON.stringify(bend.text)}`);
+                bend.width = nw;
                 bend.drawWidth = bend.width / 2;
                 totalWidth += bend.width;
             }

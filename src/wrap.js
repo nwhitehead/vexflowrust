@@ -81,8 +81,12 @@ globalThis.document = {
             getContext(t) {
                 return {
                     measureText(txt) {
+                        txt = txt || ' ';
                         console.debug(`TempCanvasContext::measureText`);
-                        assert(txt.length <= 1, 'cannot measure more than 1 glyph at a time');
+                        if (txt && txt.length > 1) {
+                            console.log(`txt=${txt}`);
+                        }
+                        //assert(txt.length <= 1, 'cannot measure more than 1 glyph at a time');
                         const { font, size } = parseFont(this.font);
                         const c = new DrawContext(1, 1, 1.0);
                         const res = c.measureText(txt.codePointAt(0) || 0, size, font);
@@ -171,7 +175,10 @@ class CanvasContext {
     fillRect(x, y, width, height) {
         console.debug(`CanvasContext::fillRect`);
         this.ctx.fillRect(x + this.rectOffset.x, y + this.rectOffset.y, width, height);
-        //cpp_fill_rect(x, y, width, height);
+    }
+    clearRect(x, y, width, height) {
+        console.debug(`CanvasContext::clearRect`);
+        this.ctx.clearRect(x + this.rectOffset.x, y + this.rectOffset.y, width, height);
     }
     lineTo(x, y) {
         console.debug(`CanvasContext::lineTo`);
