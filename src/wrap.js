@@ -131,7 +131,29 @@ class CanvasContext {
     }
     bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y) {
         console.debug(`CanvasContext::bezierCurveTo`);
-        assert(false, "Bezier curves not implemented yet");
+        console.error('bezierCurveTo not implemented yet');
+        assert(this.inPath);
+        this.ctx.moveTo(x + this.pathOffset.x, y + this.pathOffset.y);
+        //assert(false, "Bezier curves not implemented yet");
+    }
+    quadraticCurveTo(cpx, cpy, x, y) {
+        console.debug(`CanvasContext::quadraticCurveTo`);
+        console.error('quadraticCurveTo not implemented yet');
+        assert(this.inPath);
+        this.ctx.lineTo(x + this.pathOffset.x, y + this.pathOffset.y);
+        //assert(false, "Bezier curves not implemented yet");
+    }
+    measureText(txt) {
+        console.debug(`CanvasContext::measureText`);
+        const { font, size } = parseFont(this.font);
+        const res = this.ctx.measureText(txt.codePointAt(0) || 0, size, font);
+        return {
+            width: res[0],
+            fontBoundingBoxAscent: res[2],
+            fontBoundingBoxDescent: res[3],
+            actualBoundingBoxAscent: res[4],
+            actualBoundingBoxDescent: res[5],
+        }
     }
     closePath() {
         console.debug(`CanvasContext::closePath`);
