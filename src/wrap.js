@@ -91,11 +91,10 @@ globalThis.document = {
 class CanvasContext {
     constructor(ctx) {
         console.log(`CanvasContext constructed`);
+        // ctx is the DrawContext
         this.ctx = ctx;
         // Need canvas field to hold final computed scaled width and height
         this.canvas = { width:0, height: 0 };
-        // Current pen position
-        this.position = { x: 0, y: 0 };
         // Whether we are drawing a path
         this.inPath = false;
     }
@@ -112,6 +111,7 @@ class CanvasContext {
         console.log(`CanvasContext::beginPath`);
         assert(this.inPath === false);
         this.inPath = true;
+        this.ctx.beginPath();
     }
     bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y) {
         console.log(`CanvasContext::bezierCurveTo`);
@@ -128,18 +128,17 @@ class CanvasContext {
     }
     fillRect(x, y, width, height) {
         console.log(`CanvasContext::fillRect`);
-        cpp_fill_rect(x, y, width, height);
+        //cpp_fill_rect(x, y, width, height);
     }
     lineTo(x, y) {
         console.log(`CanvasContext::lineTo`);
         assert(this.inPath);
-        cpp_draw_line(this.position.x, this.position.y, x, y);
-        this.position = { x, y };
+        this.ctx.lineTo(x, y);
     }
     moveTo(x, y) {
         console.log(`CanvasContext::moveTo`);
         assert(this.inPath);
-        this.position = { x, y };
+        this.ctx.moveTo(x, y);
     }
     restore() {
         console.log(`CanvasContext::restore`);
@@ -154,6 +153,8 @@ class CanvasContext {
         console.log(`CanvasContext::stroke`);
         assert(this.inPath === true);
         this.inPath = false;
+        console.log(`width=${this.style}`);
+        this.ctx.stroke(3.0);
     }
 }
 
@@ -169,6 +170,9 @@ export class Canvas {
     // Need to have toDataURL for type detection to pass
     toDataURL() {
         return "<URL>";
+    }
+    saveFile(filename) {
+        this.drawContext.save(filename);
     }
 }
 

@@ -16,8 +16,15 @@ export async function main() {
     // Script does not have lexical scope so can't see the const vf, so expose it globally.
     globalThis.VF = VF;
     globalThis.context = ctx;
+    console.log('importing arg');
     await import(arg);
+    console.log('done importing arg');
+    canvas.saveFile('image.png');    
 }
+
+main().catch((err) => {
+    console.error(`Uncaught exception: ${err}\n${err.stack}`);
+});
 
 function test() {
 

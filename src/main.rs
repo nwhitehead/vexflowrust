@@ -98,17 +98,18 @@ impl DrawContext {
         self.path.as_mut().expect("path must be created").line_to(x as f32, y as f32);
     }
 
-    pub fn stroke(& mut self) {
+    pub fn stroke(& mut self, width: f64) {
         assert!(self.in_path);
         assert!(self.path.is_some());
+        self.in_path = false;
         // FIXME: I'm cloning the path, then removing it. How do I take ownership and drop it?
         let final_path = self.path.as_mut().expect("path must be created").clone().finish().unwrap();
         self.path = None;
         let mut paint = Paint::default();
-        paint.set_color_rgba8(255, 0, 0, 255);
+        paint.set_color_rgba8(0, 0, 0, 255);
         paint.anti_alias = true;
         let mut stroke = Stroke::default();
-        stroke.width = 2.0;
+        stroke.width = width as f32;
         stroke.line_cap = LineCap::Round;
         self.surface.stroke_path(&final_path, &paint, &stroke, Transform::identity(), None);
     }
@@ -181,41 +182,9 @@ fn main() {
         }
     });
     while runtime.is_job_pending() {
-        let _ = runtime.execute_pending_job();
+        match runtime.execute_pending_job() {
+            Ok(_) => (),
+            Err(e) => println!("Error! {:?}", e),
+        }
     }
-
-    // let mut paint = Paint::default();
-    // paint.set_color_rgba8(0, 127, 0, 200);
-    // paint.anti_alias = true;
-
-    // let path = {
-    //     let mut pb = PathBuilder::new();
-    //     const RADIUS: f32 = 250.0;
-    //     const CENTER: f32 = 250.0;
-    //     pb.move_to(CENTER + RADIUS, CENTER);
-    //     for i in 1..8 {
-    //         let a = 2.6927937 * i as f32;
-    //         pb.line_to(CENTER + RADIUS * a.cos(), CENTER + RADIUS * a.sin());
-    //     }
-    //     pb.finish().unwrap()
-    // };
-
-    // let mut stroke = Stroke::default();
-    // stroke.width = 6.0;
-    // stroke.line_cap = LineCap::Round;
-
-    // let mut pixmap = Pixmap::new(500, 500).unwrap();
-    // pixmap.stroke_path(&path, &paint, &stroke, Transform::identity(), None);
-
-    // let stride = pixmap.width();
-    // let q_glyph: Glyph = bravura_font.glyph_id('\u{E050}').with_scale(350.0);
-    // let pixels = pixmap.pixels_mut();
-    // if let Some(q) = bravura_font.outline_glyph(q_glyph) {
-    //     q.draw(|x, y, c| {
-    //         let offset: usize = (y * stride + x + 100).try_into().unwrap();
-    //         let i: u8 = (c * 255.0) as u8;
-    //         pixels[offset] = PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap();
-    //     });
-    // }    
-    // pixmap.save_png("image.png").unwrap();
 }
