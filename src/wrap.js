@@ -55,6 +55,19 @@ function parseFont(fontname) {
     return null;
 }
 
+function measureTextLocal(drawContext, txt, size) {
+    //assert(txt.length <= 1, 'cannot measure more than 1 glyph at a time');
+    const res = this.ctx.measureText(txt.codePointAt(0) || 0, size);
+    return {
+        width: res[0],
+        fontBoundingBoxAscent: res[2],
+        fontBoundingBoxDescent: res[3],
+        actualBoundingBoxAscent: res[4],
+        actualBoundingBoxDescent: res[5],
+    }
+
+}
+
 globalThis.document = {
     getElementById(id) {
         // Should never get here
@@ -84,12 +97,12 @@ globalThis.document = {
                         txt = txt || ' ';
                         console.debug(`TempCanvasContext::measureText`);
                         if (txt && txt.length > 1) {
-                            console.log(`txt=${txt}`);
+                            console.log(`TempCanvasContext::measureText too long txt=${txt}`);
                         }
                         //assert(txt.length <= 1, 'cannot measure more than 1 glyph at a time');
                         const { font, size } = parseFont(this.font);
                         const c = new DrawContext(1, 1, 1.0);
-                        const res = c.measureText(txt.codePointAt(0) || 0, size, font);
+                        const res = c.measureText(txt.codePointAt(0) || 0, size);
                         return {
                             width: res[0],
                             fontBoundingBoxAscent: res[2],
@@ -125,6 +138,10 @@ class CanvasContext {
         return 1;
     }
     fillText(txt, x, y) {
+        //assert(txt.length <= 1, 'txt too long');
+        if (txt.length > 1) {
+            console.log(`fillText too long txt=${txt}`);
+        }
         const { font, size } = parseFont(this.font);
         console.debug(`CanvasContext::fillText x=${x} y=${y} size=${size} font=${font}`);
         this.ctx.fillText(txt.charCodeAt(0) || 0, x + this.textOffset.x, y + this.textOffset.y, size, font);
@@ -177,7 +194,7 @@ class CanvasContext {
         this.ctx.fillRect(x + this.rectOffset.x, y + this.rectOffset.y, width, height);
     }
     clearRect(x, y, width, height) {
-        console.debug(`CanvasContext::clearRect`);
+        console.debug(`CanvasContext::clearRect(${x}, ${y}, ${width}, ${height})`);
         this.ctx.clearRect(x + this.rectOffset.x, y + this.rectOffset.y, width, height);
     }
     lineTo(x, y) {

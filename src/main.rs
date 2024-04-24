@@ -24,7 +24,7 @@ impl FontLibrary {
         }
     }
 
-    pub fn lookup_glyph(&self, codepoint:u32, _fontname: &str, size: f64) -> (PxScaleFont<&FontVec>, Glyph) {
+    pub fn lookup_glyph(&self, codepoint:u32, size: f64) -> (PxScaleFont<&FontVec>, Glyph) {
         let ch = char::from_u32(codepoint).unwrap();
         // First try Bravura
         let chosen_font = &self.bravura_font;
@@ -88,8 +88,8 @@ impl DrawContext {
     }
 
     #[qjs(rename = "measureText")]
-    pub fn measure_text(&mut self, txtch: u32, size: f64, font: String) -> std::vec::Vec<f64> {
-        let (scaled_font, glyph) = self.font_library.lookup_glyph(txtch, &font, size * self.zoom);
+    pub fn measure_text(&mut self, txtch: u32, size: f64) -> std::vec::Vec<f64> {
+        let (scaled_font, glyph) = self.font_library.lookup_glyph(txtch, size * self.zoom);
         let ascent = scaled_font.ascent();
         let descent = scaled_font.descent();
         let h_advance = scaled_font.h_advance(glyph.id);
@@ -102,11 +102,11 @@ impl DrawContext {
     }
 
     #[qjs(rename = "fillText")]
-    pub fn fill_text(&mut self, txtch: u32, x: f64, y: f64, size: f64, font: String) {
+    pub fn fill_text(&mut self, txtch: u32, x: f64, y: f64, size: f64) {
         let stride = self.surface.width();
         let width = self.width as i32;
         let height = self.height as i32;
-        let (scaled_font, glyph) = self.font_library.lookup_glyph(txtch, &font, size * self.zoom);
+        let (scaled_font, glyph) = self.font_library.lookup_glyph(txtch, size * self.zoom);
         let pixels = self.surface.pixels_mut();
         if let Some(g) = scaled_font.outline_glyph(glyph) {
             let bounds = g.px_bounds();
