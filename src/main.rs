@@ -44,7 +44,8 @@ impl DrawContext {
         let ch = char::from_u32(txtch).unwrap();
         let glyph: GlyphId = chosen_font.glyph_id(ch);
         let h_advance = scaled_font.h_advance(glyph);
-        return vec![h_advance as f64, 2.0];
+        let v_advance = scaled_font.v_advance(glyph);
+        return vec![h_advance as f64, v_advance as f64];
     }
 
     #[qjs(rename = "fillText")]
