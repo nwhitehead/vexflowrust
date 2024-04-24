@@ -1,4 +1,4 @@
-use ab_glyph::{Font, FontVec, ScaleFont, GlyphId, PxScaleFont};
+use ab_glyph::{Font, FontVec, ScaleFont, PxScaleFont};
 use rquickjs::{
     class::Trace,
     context::EvalOptions,
@@ -82,12 +82,19 @@ impl DrawContext {
     #[qjs(rename = "measureText")]
     pub fn measure_text(&mut self, txtch: u32, size: f64, font: String) -> std::vec::Vec<f64> {
         let scaled_font = self.font_library.lookup(&font, size * self.zoom);
-        println!("{:?}", scaled_font);
         let ch = char::from_u32(txtch).unwrap();
-        let glyph: GlyphId = scaled_font.font.glyph_id(ch);
-        let h_advance = scaled_font.h_advance(glyph);
-        let v_advance = scaled_font.v_advance(glyph);
-        return vec![h_advance as f64, v_advance as f64];
+        let glyph_id = scaled_font.font.glyph_id(ch);
+        let h_advance = scaled_font.h_advance(glyph_id);
+        let v_advance = scaled_font.v_advance(glyph_id);
+        let ascent = scaled_font.ascent();
+        let descent = scaled_font.descent();
+        let glyph = scaled_font.scaled_glyph(ch);
+        if let Some(g) = scaled_font.outline_glyph(glyph) {
+            let bounds = g.px_bounds();
+            //return vec![/*h_advance as f64*/(bounds.max.x - bounds.min.x) as f64, v_advance as f64, ascent as f64, descent as f64, bounds.min.y as f64, bounds.max.y as f64];
+            return vec![h_advance as f64, v_advance as f64, ascent as f64, descent as f64, bounds.min.y as f64, bounds.max.y as f64];
+        }
+        return vec![h_advance as f64, v_advance as f64, ascent as f64, descent as f64, 0.0, 0.0];
     }
 
     #[qjs(rename = "fillText")]
@@ -163,7 +170,7 @@ impl DrawContext {
         paint.set_color_rgba8(0, 0, 0, 255);
         paint.anti_alias = true;
         let mut stroke = Stroke::default();
-        stroke.width = width as f32;
+        stroke.width = (width * self.zoom) as f32;
         stroke.line_cap = LineCap::Round;
         self.surface
             .stroke_path(&final_path, &paint, &stroke, Transform::identity(), None);

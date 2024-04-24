@@ -86,10 +86,10 @@ globalThis.document = {
                         const res = c.measureText(txt.codePointAt(0) || 0, size, font);
                         return {
                             width: res[0],
-                            fontBoundingBoxAscent: 10.0,
-                            fontBoundingBoxDescent: 10.0,
-                            actualBoundingBoxAscent: 10.0,
-                            actualBoundingBoxDescent: 10.0,
+                            fontBoundingBoxAscent: res[2],
+                            fontBoundingBoxDescent: res[3],
+                            actualBoundingBoxAscent: res[4],
+                            actualBoundingBoxDescent: res[5],
                         }
                     }
                 };

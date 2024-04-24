@@ -10,7 +10,7 @@ export async function main() {
 
     console.log(`arg=${arg}`);
 
-    const canvas = new Canvas(width, height, 2.0);
+    const canvas = new Canvas(width, height, 3.0);
     const ctx = VF.Renderer.buildContext(canvas, 1, width, height);
 
     // Script does not have lexical scope so can't see the const vf, so expose it globally.
