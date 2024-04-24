@@ -99,14 +99,19 @@ globalThis.document = {
 };
 
 class CanvasContext {
-    constructor(ctx) {
+    constructor(ctx, zoom) {
         console.debug(`CanvasContext constructed`);
         // ctx is the DrawContext
         this.ctx = ctx;
+        this.zoom = zoom;
         // Need canvas field to hold final computed scaled width and height
         this.canvas = { width:0, height: 0 };
         // Whether we are drawing a path
         this.inPath = false;
+        // Global offset for subpixel aliasing issues
+        this.pathOffset = { x:-0.3/zoom, y:-0.3/zoom };
+        this.rectOffset = { x:-0.3/zoom, y:-0.3/zoom };
+        this.textOffset = { x:0.0/zoom, y:0.0/zoom };
     }
     // Wrapped methods
     getTransform() {
@@ -114,9 +119,9 @@ class CanvasContext {
         return 1;
     }
     fillText(txt, x, y) {
-        console.debug(`CanvasContext::fillText x=${x} y=${y}`);
         const { font, size } = parseFont(this.font);
-        this.ctx.fillText(txt.charCodeAt(0) || 0, x, y, size, font);
+        console.debug(`CanvasContext::fillText x=${x} y=${y} size=${size} font=${font}`);
+        this.ctx.fillText(txt.charCodeAt(0) || 0, x + this.textOffset.x, y + this.textOffset.y, size, font);
     }
     beginPath() {
         console.debug(`CanvasContext::beginPath`);
@@ -140,18 +145,18 @@ class CanvasContext {
     }
     fillRect(x, y, width, height) {
         console.debug(`CanvasContext::fillRect`);
-        this.ctx.fillRect(x, y, width, height);
+        this.ctx.fillRect(x + this.rectOffset.x, y + this.rectOffset.y, width, height);
         //cpp_fill_rect(x, y, width, height);
     }
     lineTo(x, y) {
         console.debug(`CanvasContext::lineTo`);
         assert(this.inPath);
-        this.ctx.lineTo(x, y);
+        this.ctx.lineTo(x + this.pathOffset.x, y + this.pathOffset.y);
     }
     moveTo(x, y) {
         console.debug(`CanvasContext::moveTo`);
         assert(this.inPath);
-        this.ctx.moveTo(x, y);
+        this.ctx.moveTo(x + this.pathOffset.x, y + this.pathOffset.y);
     }
     restore() {
         console.debug(`CanvasContext::restore`);
@@ -183,7 +188,7 @@ export class Canvas {
         this.drawContext.clear(1.0, 0.99, 0.97, 1);
     }
     getContext() {
-        return new CanvasContext(this.drawContext);
+        return new CanvasContext(this.drawContext, this.zoom);
     }
     // Need to have toDataURL for type detection to pass
     toDataURL() {

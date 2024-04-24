@@ -171,7 +171,7 @@ impl DrawContext {
         paint.anti_alias = true;
         let mut stroke = Stroke::default();
         stroke.width = (width * self.zoom) as f32;
-        stroke.line_cap = LineCap::Round;
+        stroke.line_cap = LineCap::Butt;
         self.surface
             .stroke_path(&final_path, &paint, &stroke, Transform::identity(), None);
     }
