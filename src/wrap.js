@@ -87,6 +87,10 @@ globalThis.document = {
                         const res = c.measureText(txt.codePointAt(0) || 0, size, fontNum);
                         return {
                             width: res[0],
+                            fontBoundingBoxAscent: 10.0,
+                            fontBoundingBoxDescent: 10.0,
+                            actualBoundingBoxAscent: 10.0,
+                            actualBoundingBoxDescent: 10.0,
                         }
                     }
                 };
@@ -111,7 +115,7 @@ class CanvasContext {
         return 1;
     }
     fillText(txt, x, y) {
-        console.debug(`CanvasContext::fillText`);
+        console.debug(`CanvasContext::fillText x=${x} y=${y}`);
         const { font, size } = parseFont(this.font);
         this.ctx.fillText(txt.charCodeAt(0) || 0, x, y, size, font === 'Bravura' ? 1 : 0);
     }
@@ -176,6 +180,8 @@ export class Canvas {
         this.height = height;
         this.zoom = zoom || 1.0;
         this.drawContext = new DrawContext(width, height, this.zoom);
+        // Set opaque page
+        this.drawContext.clear(1.0, 0.99, 0.97, 1);
     }
     getContext() {
         return new CanvasContext(this.drawContext);

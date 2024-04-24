@@ -7,6 +7,7 @@ use rquickjs::{
     Class, Context, Ctx, Error, Function, Runtime, Value,
 };
 use tiny_skia::{
+    Color,
     FillRule, LineCap, Paint, PathBuilder, Pixmap, PremultipliedColorU8, Rect, Stroke, Transform,
 };
 
@@ -26,13 +27,14 @@ pub struct DrawContext {
 
 fn blend_color(src: &PremultipliedColorU8, dst: &PremultipliedColorU8) -> PremultipliedColorU8 {
     // Blend src onto existing dst color.
-    // We know everything is premultiplied alpha for black text.
-    // Cheat and take entire color from src.
-    // Compute alpha as sum of opacities clamped to max.
+    // Remember that rgb are premultiplied by alpha, makes blend factors 1 and 1-src_alpha
     let src_a = src.alpha();
-    let dst_a = dst.alpha();
-    let final_a = (src_a as i32 + dst_a as i32).clamp(0, 255) as u8;
-    return PremultipliedColorU8::from_rgba(src.red(), src.green(), src.blue(), final_a).unwrap();
+    let inv_src_a: u16 = (255 - src_a) as u16;
+    let r: u8 = src.red() + (((dst.red() as u16 * inv_src_a) as u16 >> 8) & 0xff) as u8;
+    let g: u8 = src.green() + (((dst.green() as u16 * inv_src_a) as u16 >> 8) & 0xff) as u8;
+    let b: u8 = src.blue() + (((dst.blue() as u16 * inv_src_a) as u16 >> 8) & 0xff) as u8;
+    let a: u8 = src.alpha() + (((dst.alpha() as u16 * inv_src_a) as u16 >> 8) & 0xff) as u8;
+    return PremultipliedColorU8::from_rgba(r, g, b, a).unwrap();
 }
 
 #[rquickjs::methods]
@@ -197,6 +199,11 @@ impl DrawContext {
             None,
         );
     }
+
+    pub fn clear(&mut self, r: f64, g: f64, b: f64, a: f64) {
+        self.surface.fill(Color::from_rgba(r as f32, g as f32, b as f32, a as f32).unwrap());
+    }
+
 }
 
 pub fn print(msg: String) {
