@@ -102,24 +102,29 @@ impl DrawContext {
     }
 
     #[qjs(rename = "fillText")]
-    pub fn fill_text(&mut self, txtch: u32, x: f64, y: f64, size: f64) {
+    pub fn fill_text(&mut self, txt: String, x: f64, y: f64, size: f64) {
+        let mut x_pos = x;
         let stride = self.surface.width();
         let width = self.width as i32;
         let height = self.height as i32;
-        let (scaled_font, glyph) = self.font_library.lookup_glyph(txtch, size * self.zoom);
-        let pixels = self.surface.pixels_mut();
-        if let Some(g) = scaled_font.outline_glyph(glyph) {
-            let bounds = g.px_bounds();
-            g.draw(|xx, yy, c| {
-                let xi = (xx as f32 + (x * self.zoom) as f32 + bounds.min.x) as i32;
-                let yi = (yy as f32 + (y * self.zoom) as f32 + bounds.min.y) as i32;
-                // Make sure we don't draw outside the size of pixmap
-                if xi >= 0 && xi < (width as f64 * self.zoom) as i32 && yi >= 0 && yi < (height as f64 * self.zoom) as i32 {
-                    let offset: usize = (yi as u32 * stride + xi as u32).try_into().unwrap();
-                    let i: u8 = (c * 255.0) as u8;
-                    pixels[offset] = blend_color(&PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap(), &pixels[offset]);
-                }
-            });
+        for ch in txt.chars() {
+            let (scaled_font, glyph) = self.font_library.lookup_glyph(ch as u32, size * self.zoom);
+            let pixels = self.surface.pixels_mut();
+            let h_advance = scaled_font.h_advance(glyph.id) as f64 / self.zoom;
+            if let Some(g) = scaled_font.outline_glyph(glyph) {
+                let bounds = g.px_bounds();
+                g.draw(|xx, yy, c| {
+                    let xi = (xx as f32 + (x_pos * self.zoom) as f32 + bounds.min.x) as i32;
+                    let yi = (yy as f32 + (y * self.zoom) as f32 + bounds.min.y) as i32;
+                    // Make sure we don't draw outside the size of pixmap
+                    if xi >= 0 && xi < (width as f64 * self.zoom) as i32 && yi >= 0 && yi < (height as f64 * self.zoom) as i32 {
+                        let offset: usize = (yi as u32 * stride + xi as u32).try_into().unwrap();
+                        let i: u8 = (c * 255.0) as u8;
+                        pixels[offset] = blend_color(&PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap(), &pixels[offset]);
+                    }
+                });
+                x_pos += h_advance;
+            }
         }
     }
 

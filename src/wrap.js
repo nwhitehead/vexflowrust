@@ -136,8 +136,8 @@ class CanvasContext {
     }
     fillText(txt, x, y) {
         const { size } = parseFont(this.font);
-        console.debug(`CanvasContext::fillText x=${x} y=${y} size=${size}`);
-        this.ctx.fillText(txt.charCodeAt(0) || 0, x + this.textOffset.x, y + this.textOffset.y, size);
+        console.debug(`CanvasContext::fillText txt=${txt} x=${x} y=${y} size=${size}`);
+        this.ctx.fillText(txt, x + this.textOffset.x, y + this.textOffset.y, size);
     }
     beginPath() {
         console.debug(`CanvasContext::beginPath`);
