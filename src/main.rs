@@ -1,5 +1,8 @@
 use rquickjs::{
     class::Trace, function::IntoJsFunc, Class, Context, Ctx, Error, Function, Runtime, Value,
+    loader::{
+        BuiltinLoader, BuiltinResolver, FileResolver, ModuleLoader, ScriptLoader,
+    },
 };
 use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, PremultipliedColorU8, Transform};
 use ab_glyph::{FontRef, Font, Glyph};
@@ -133,8 +136,17 @@ fn format_exception(v: Value) -> String {
 }
 
 fn main() {
+    let resolver = (
+        BuiltinResolver::default(),
+        FileResolver::default().with_path("./"),
+    );
+    let loader = (
+        BuiltinLoader::default(),
+        ScriptLoader::default(),
+    );
     let runtime = Runtime::new().unwrap();
     let ctx = Context::full(&runtime).unwrap();
+    runtime.set_loader(resolver, loader);
     ctx.with(|ctx| {
         let global = ctx.globals();
         Class::<DrawContext>::define(&global).unwrap();

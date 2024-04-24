@@ -1,4 +1,6 @@
 
+import 'wrap.js';
+
 function anyToString(v) {
     if (v === undefined) {
         return 'undefined';
