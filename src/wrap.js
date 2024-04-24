@@ -81,6 +81,8 @@ globalThis.document = {
             getContext(t) {
                 return {
                     measureText(txt) {
+                        console.debug(`TempCanvasContext::measureText`);
+                        assert(txt.length <= 1, 'cannot measure more than 1 glyph at a time');
                         const { font, size } = parseFont(this.font);
                         const c = new DrawContext(1, 1, 1.0);
                         const res = c.measureText(txt.codePointAt(0) || 0, size, font);
@@ -138,13 +140,14 @@ class CanvasContext {
     }
     quadraticCurveTo(cpx, cpy, x, y) {
         console.debug(`CanvasContext::quadraticCurveTo`);
-        console.error('quadraticCurveTo not implemented yet');
+        //console.error('quadraticCurveTo not implemented yet');
         assert(this.inPath);
-        this.ctx.lineTo(x + this.pathOffset.x, y + this.pathOffset.y);
+        this.ctx.quadraticCurveTo(cpx + this.pathOffset.x, cpy + this.pathOffset.y, x + this.pathOffset.x, y + this.pathOffset.y);
         //assert(false, "Bezier curves not implemented yet");
     }
     measureText(txt) {
         console.debug(`CanvasContext::measureText`);
+        assert(txt.length <= 1, 'cannot measure more than 1 glyph at a time');
         const { font, size } = parseFont(this.font);
         const res = this.ctx.measureText(txt.codePointAt(0) || 0, size, font);
         return {

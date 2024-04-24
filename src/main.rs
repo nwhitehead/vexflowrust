@@ -153,6 +153,16 @@ impl DrawContext {
             .line_to((x * self.zoom) as f32, (y * self.zoom) as f32);
     }
 
+    #[qjs(rename = "quadraticCurveTo")]
+    pub fn quadratic_curve_to(&mut self, x1: f64, y1: f64, x: f64, y: f64) {
+        assert!(self.in_path);
+        assert!(self.path.is_some());
+        self.path
+            .as_mut()
+            .expect("path must be created")
+            .quad_to((x1 * self.zoom) as f32, (y1 * self.zoom) as f32, (x * self.zoom) as f32, (y * self.zoom) as f32);
+    }
+
     pub fn stroke(&mut self, width: f64) {
         assert!(self.in_path);
         assert!(self.path.is_some());
