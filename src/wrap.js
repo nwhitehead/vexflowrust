@@ -83,7 +83,7 @@ globalThis.document = {
                     measureText(txt) {
                         const { font, size } = parseFont(this.font);
                         const fontNum = font === 'Bravura' ? 1 : 0;
-                        const c = new DrawContext(1, 1);
+                        const c = new DrawContext(1, 1, 1.0);
                         const res = c.measureText(txt.codePointAt(0) || 0, size, fontNum);
                         return {
                             width: res[0],
@@ -171,10 +171,11 @@ class CanvasContext {
 }
 
 export class Canvas {
-    constructor(width, height) {
+    constructor(width, height, zoom) {
         this.width = width;
         this.height = height;
-        this.drawContext = new DrawContext(width, height);
+        this.zoom = zoom || 1.0;
+        this.drawContext = new DrawContext(width, height, this.zoom);
     }
     getContext() {
         return new CanvasContext(this.drawContext);

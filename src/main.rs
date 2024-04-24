@@ -15,6 +15,7 @@ use tiny_skia::{
 pub struct DrawContext {
     width: u32,
     height: u32,
+    zoom: f64,
     #[qjs(skip_trace)]
     surface: Pixmap,
     font: String,
@@ -37,11 +38,12 @@ fn blend_color(src: &PremultipliedColorU8, dst: &PremultipliedColorU8) -> Premul
 #[rquickjs::methods]
 impl DrawContext {
     #[qjs(constructor)]
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(width: u32, height: u32, zoom: f64) -> Self {
         DrawContext {
             width,
             height,
-            surface: Pixmap::new(width, height).unwrap(),
+            zoom,
+            surface: Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32).unwrap(),
             font: "".to_string(),
             in_path: false,
             path: None,
@@ -85,17 +87,17 @@ impl DrawContext {
             &bravura_font
         };
         let ch = char::from_u32(txtch).unwrap();
-        let scale = chosen_font.pt_to_px_scale(size as f32).unwrap();
+        let scale = chosen_font.pt_to_px_scale((size * self.zoom) as f32).unwrap();
         let scaled_font = chosen_font.as_scaled(scale);
         let glyph = scaled_font.scaled_glyph(ch);
         let pixels = self.surface.pixels_mut();
         if let Some(g) = scaled_font.outline_glyph(glyph) {
             let bounds = g.px_bounds();
             g.draw(|xx, yy, c| {
-                let xi = (xx as f32 + x as f32 + bounds.min.x) as i32;
-                let yi = (yy as f32 + y as f32 + bounds.min.y) as i32;
+                let xi = (xx as f32 + (x * self.zoom) as f32 + bounds.min.x) as i32;
+                let yi = (yy as f32 + (y * self.zoom) as f32 + bounds.min.y) as i32;
                 // Make sure we don't draw outside the size of pixmap
-                if xi >= 0 && xi < width && yi >= 0 && yi < height {
+                if xi >= 0 && xi < (width as f64 * self.zoom) as i32 && yi >= 0 && yi < (height as f64 * self.zoom) as i32 {
                     let offset: usize = (yi as u32 * stride + xi as u32).try_into().unwrap();
                     let i: u8 = (c * 255.0) as u8;
                     pixels[offset] = blend_color(&PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap(), &pixels[offset]);
@@ -122,7 +124,7 @@ impl DrawContext {
         self.path
             .as_mut()
             .expect("path must be created")
-            .move_to(x as f32, y as f32);
+            .move_to((x * self.zoom) as f32, (y * self.zoom) as f32);
     }
 
     #[qjs(rename = "lineTo")]
@@ -132,7 +134,7 @@ impl DrawContext {
         self.path
             .as_mut()
             .expect("path must be created")
-            .line_to(x as f32, y as f32);
+            .line_to((x * self.zoom) as f32, (y * self.zoom) as f32);
     }
 
     pub fn stroke(&mut self, width: f64) {
@@ -189,7 +191,7 @@ impl DrawContext {
         paint.set_color_rgba8(0, 0, 0, 255);
         paint.anti_alias = true;
         self.surface.fill_rect(
-            Rect::from_xywh(x as f32, y as f32, width as f32, height as f32).unwrap(),
+            Rect::from_xywh((x * self.zoom) as f32, (y * self.zoom) as f32, (width * self.zoom) as f32, (height * self.zoom) as f32).unwrap(),
             &paint,
             Transform::identity(),
             None,
