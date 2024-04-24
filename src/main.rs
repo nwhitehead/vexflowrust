@@ -5,7 +5,7 @@ use rquickjs::{
     },
     context::EvalOptions,
 };
-use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Stroke, PremultipliedColorU8, Transform};
+use tiny_skia::{LineCap, Paint, PathBuilder, Pixmap, Rect, Stroke, PremultipliedColorU8, Transform};
 use ab_glyph::{FontRef, Font, Glyph, GlyphId, ScaleFont};
 
 #[derive(Trace)]
@@ -112,6 +112,19 @@ impl DrawContext {
         stroke.width = width as f32;
         stroke.line_cap = LineCap::Round;
         self.surface.stroke_path(&final_path, &paint, &stroke, Transform::identity(), None);
+    }
+
+    #[qjs(rename = "fillRect")]
+    pub fn fill_rect(& mut self, x: f64, y: f64, width: f64, height: f64) {
+        let mut paint = Paint::default();
+        paint.set_color_rgba8(0, 0, 0, 255);
+        paint.anti_alias = true;
+        self.surface.fill_rect(
+            Rect::from_xywh(x as f32, y as f32, width as f32, height as f32).unwrap(),
+            &paint,
+            Transform::identity(),
+            None
+        );
     }
 
     pub fn fill(& mut self) {

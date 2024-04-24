@@ -1,4 +1,6 @@
 
+globalThis.DEBUG = true;
+
 function anyToString(v) {
     if (v === undefined) {
         return 'undefined';
@@ -18,6 +20,11 @@ globalThis.console = {
     },
     error(txt) {
         print(anyToString(txt));
+    },
+    debug(txt) {
+        if (DEBUG) {
+            this.log(txt);
+        }
     }
 };
 
@@ -90,7 +97,7 @@ globalThis.document = {
 
 class CanvasContext {
     constructor(ctx) {
-        console.log(`CanvasContext constructed`);
+        console.debug(`CanvasContext constructed`);
         // ctx is the DrawContext
         this.ctx = ctx;
         // Need canvas field to hold final computed scaled width and height
@@ -100,61 +107,64 @@ class CanvasContext {
     }
     // Wrapped methods
     getTransform() {
-        console.log(`CanvasContext::getTransform`);
+        console.debug(`CanvasContext::getTransform`);
         return 1;
     }
     fillText(txt, x, y) {
-        console.log(`CanvasContext::fillText`);
+        console.debug(`CanvasContext::fillText`);
         const { font, size } = parseFont(this.font);
     }
     beginPath() {
-        console.log(`CanvasContext::beginPath`);
+        console.debug(`CanvasContext::beginPath`);
         assert(this.inPath === false);
         this.inPath = true;
         this.ctx.beginPath();
     }
     bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y) {
-        console.log(`CanvasContext::bezierCurveTo`);
+        console.debug(`CanvasContext::bezierCurveTo`);
         assert(false, "Bezier curves not implemented yet");
     }
     closePath() {
-        console.log(`CanvasContext::closePath`);
+        console.debug(`CanvasContext::closePath`);
         // not sure what to do here
     }
     fill() {
-        console.log(`CanvasContext::fill`);
+        console.debug(`CanvasContext::fill`);
         assert(this.inPath === true);
         this.inPath = false;
     }
     fillRect(x, y, width, height) {
-        console.log(`CanvasContext::fillRect`);
+        console.debug(`CanvasContext::fillRect`);
+        this.ctx.fillRect(x, y, width, height);
         //cpp_fill_rect(x, y, width, height);
     }
     lineTo(x, y) {
-        console.log(`CanvasContext::lineTo`);
+        console.debug(`CanvasContext::lineTo`);
         assert(this.inPath);
         this.ctx.lineTo(x, y);
     }
     moveTo(x, y) {
-        console.log(`CanvasContext::moveTo`);
+        console.debug(`CanvasContext::moveTo`);
         assert(this.inPath);
         this.ctx.moveTo(x, y);
     }
     restore() {
-        console.log(`CanvasContext::restore`);
+        console.debug(`CanvasContext::restore`);
+        // No operation
     }
     save() {
-        console.log(`CanvasContext::save`);
+        console.debug(`CanvasContext::save`);
+        // No operation
     }
     scale(x, y) {
-        console.log(`CanvasContext::scale`);
+        console.debug(`CanvasContext::scale`);
+        // No operation
     }
     stroke() {
-        console.log(`CanvasContext::stroke`);
+        console.debug(`CanvasContext::stroke`);
         assert(this.inPath === true);
         this.inPath = false;
-        console.log(`width=${this.style}`);
-        this.ctx.stroke(3.0);
+        this.ctx.stroke(this.lineWidth || 1.0);
     }
 }
 

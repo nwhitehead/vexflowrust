@@ -16,13 +16,15 @@ export async function main() {
     // Script does not have lexical scope so can't see the const vf, so expose it globally.
     globalThis.VF = VF;
     globalThis.context = ctx;
-    console.log('importing arg');
+
     await import(arg);
-    console.log('done importing arg');
+
     canvas.saveFile('image.png');    
 }
 
 main().catch((err) => {
+    // Need to catch exceptions here, at Rust QJS scope we just see pending jobs and don't get the exceptions.
+    // Luckily they do have stack traces.
     console.error(`Uncaught exception: ${err}\n${err.stack}`);
 });
 
@@ -45,9 +47,7 @@ function test() {
     const el = document.createElement('span');
     el.style.font = "30pt Bravura,default";
     assert(JSON.stringify(el.style.font) === "{\"font\":\"Bravura\",\"size\":30}");
-
     assert(Math.abs(c.measureText(0xe050, 30.0, 1)[0] - 26.840002059936523) < 1e-6, "measureText width wrong");
-
     const canv = document.createElement('canvas');
     let ctx = canv.getContext('2d');
     ctx.font = '100pt Garamond';
