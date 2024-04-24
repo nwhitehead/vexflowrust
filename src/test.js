@@ -6,7 +6,7 @@ const VF = window.VexFlow;
 const width = 1024;
 const height = 800;
 
-function main() {
+export async function main() {
 
     console.log(`arg=${arg}`);
 
@@ -16,10 +16,8 @@ function main() {
     // Script does not have lexical scope so can't see the const vf, so expose it globally.
     globalThis.VF = VF;
     globalThis.context = ctx;
-    import(arg);
+    await import(arg);
 }
-
-main();
 
 function test() {
 

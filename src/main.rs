@@ -180,6 +180,9 @@ fn main() {
             Ok(_) => (),
         }
     });
+    while runtime.is_job_pending() {
+        let _ = runtime.execute_pending_job();
+    }
 
     // let mut paint = Paint::default();
     // paint.set_color_rgba8(0, 127, 0, 200);
