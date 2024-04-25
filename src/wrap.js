@@ -73,7 +73,6 @@ function measureTextLocal(drawContext, txt, size) {
             res.width += metrics[0];
         }
     }
-    console.log(`txt=${txt} width=${res.width}`);
     return res;
 }
 
@@ -125,9 +124,7 @@ class CanvasContext {
         // Whether we are drawing a path
         this.inPath = false;
         // Global offset for subpixel aliasing issues
-        this.pathOffset = { x:-0.3/zoom, y:-0.3/zoom };
-        this.rectOffset = { x:-0.3/zoom, y:-0.3/zoom };
-        this.textOffset = { x:0.0/zoom, y:0.0/zoom };
+        this.offset = { x:-0.3/zoom, y:-0.3/zoom };
     }
     // Wrapped methods
     getTransform() {
@@ -137,7 +134,7 @@ class CanvasContext {
     fillText(txt, x, y) {
         const { size } = parseFont(this.font);
         console.debug(`CanvasContext::fillText txt=${txt} x=${x} y=${y} size=${size}`);
-        this.ctx.fillText(txt, x + this.textOffset.x, y + this.textOffset.y, size);
+        this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size);
     }
     beginPath() {
         console.debug(`CanvasContext::beginPath`);
@@ -149,15 +146,12 @@ class CanvasContext {
         console.debug(`CanvasContext::bezierCurveTo`);
         console.error('bezierCurveTo not implemented yet');
         assert(this.inPath);
-        this.ctx.moveTo(x + this.pathOffset.x, y + this.pathOffset.y);
-        //assert(false, "Bezier curves not implemented yet");
+        this.ctx.moveTo(x + this.offset.x, y + this.offset.y);
     }
     quadraticCurveTo(cpx, cpy, x, y) {
         console.debug(`CanvasContext::quadraticCurveTo`);
-        //console.error('quadraticCurveTo not implemented yet');
         assert(this.inPath);
-        this.ctx.quadraticCurveTo(cpx + this.pathOffset.x, cpy + this.pathOffset.y, x + this.pathOffset.x, y + this.pathOffset.y);
-        //assert(false, "Bezier curves not implemented yet");
+        this.ctx.quadraticCurveTo(cpx + this.offset.x, cpy + this.offset.y, x + this.offset.x, y + this.offset.y);
     }
     measureText(txt) {
         console.debug(`CanvasContext::measureText`);
@@ -176,21 +170,21 @@ class CanvasContext {
     }
     fillRect(x, y, width, height) {
         console.debug(`CanvasContext::fillRect`);
-        this.ctx.fillRect(x + this.rectOffset.x, y + this.rectOffset.y, width, height, 0, 0, 0);
+        this.ctx.fillRect(x + this.offset.x, y + this.offset.y, width, height, 0, 0, 0);
     }
     clearRect(x, y, width, height) {
         console.debug(`CanvasContext::clearRect(${x}, ${y}, ${width}, ${height})`);
-        this.ctx.fillRect(x + this.rectOffset.x, y + this.rectOffset.y, width, height, 1, 1, 1);
+        this.ctx.fillRect(x + this.offset.x, y + this.offset.y, width, height, 1, 1, 1);
     }
     lineTo(x, y) {
         console.debug(`CanvasContext::lineTo`);
         assert(this.inPath);
-        this.ctx.lineTo(x + this.pathOffset.x, y + this.pathOffset.y);
+        this.ctx.lineTo(x + this.offset.x, y + this.offset.y);
     }
     moveTo(x, y) {
         console.debug(`CanvasContext::moveTo`);
         assert(this.inPath);
-        this.ctx.moveTo(x + this.pathOffset.x, y + this.pathOffset.y);
+        this.ctx.moveTo(x + this.offset.x, y + this.offset.y);
     }
     restore() {
         console.debug(`CanvasContext::restore`);

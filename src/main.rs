@@ -352,6 +352,7 @@ fn main() {
             Ok(_) => (),
         }
     });
+    // Make sure to keep going until work is actually done
     while runtime.is_job_pending() {
         match runtime.execute_pending_job() {
             Ok(_) => (),
