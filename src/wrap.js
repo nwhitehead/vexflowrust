@@ -271,7 +271,7 @@ class CanvasContext {
         this.ctx.fill(0, 0, 0);
     }
     fillRect(x, y, width, height) {
-        console.debug(`CanvasContext::fillRect`);
+        console.debug(`CanvasContext::fillRect ${x + this.offset.x}, ${y + this.offset.y}, ${width}, ${height}`);
         this.ctx.fillRect(x + this.offset.x, y + this.offset.y, width, height, 0, 0, 0);
     }
     clearRect(x, y, width, height) {

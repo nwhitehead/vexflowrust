@@ -5,25 +5,41 @@ import './src/vexflow-debug.js';
 const VF = window.VexFlow;
 const width = 800;
 const height = 600;
+const zoom = 1.0;
+
+const { Factory } = VF;
+
+class HeadlessFactory extends Factory {
+    constructor(options) {
+        super({ renderer: { elementId: null } });
+        const opts = options || {};
+        const width = opts.width || 500;
+        const height = opts.height || 200;
+        const zoom = opts.zoom || 1.0;
+        const background = opts.background || '#fffdf5';
+        const canvas = new Canvas(width, height, zoom);
+        this.canvas = canvas;
+        const context = VF.Renderer.buildContext(canvas, 1/*canvas backend*/, width, height, background);
+        this.context = context;
+    }
+    saveFile(filename) {
+        this.canvas.saveFile(filename);
+    }
+}
 
 export async function main() {
 
     console.log(`arg=${arg}`);
 
-    const canvas = new Canvas(width, height, 3.0);
-    const context = VF.Renderer.buildContext(canvas, 1, width, height, '#fff');
-    const { Factory } = VF;
+    const vf = new HeadlessFactory({ width, height, zoom });
+
     // Script does not have lexical scope so can't see the const vf, so expose it globally.
     globalThis.VF = VF;
-    globalThis.context = context;
-    const vf = new Factory({
-        renderer: { elementId: null, width: 1000, height: 200 },
-    });
-    vf.context = context;
+    globalThis.context = vf.context;
     globalThis.vf = vf;
     await import(arg);
 
-    canvas.saveFile('image.png');    
+    vf.saveFile('image.png');    
 }
 
 main().catch((err) => {
