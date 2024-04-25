@@ -88,7 +88,7 @@ globalThis.window = {};
 ///     italic
 function parseFont(font) {
     assert(font, "No argument given to parseFont");
-    let res = {};
+    let res = { bold: false, italic: false };
     // First split on spaces (but not spaces in quotes)
     const parts = font.match(/(?:[^\s"]+|"[^"]*")+/g)
     for (const part of parts) {
@@ -121,37 +121,46 @@ function parseFont(font) {
 assert_same(parseFont('30pt Bravura,Academico'), {
     family: ['Bravura', 'Academico'],
     size: 30,
+    bold: false,
+    italic: false,
 });
 assert_same(parseFont('9pt Academico'), {
     family: ['Academico'],
     size: 9,
+    bold: false,
+    italic: false,
 });
 assert_same(parseFont('italic 9pt Academico'), {
     family: ['Academico'],
     size: 9,
     italic: true,
+    bold: false,
 });
 assert_same(parseFont('italic 10.72pt Academico'), {
     family: ['Academico'],
     size: 10.72,
     italic: true,
+    bold: false,
 });
 assert_same(parseFont('bold 12pt Lato'), {
     family: ['Lato'],
     size: 12,
     bold: true,
+    italic: false,
 });
 assert_same(parseFont('9pt Academico,"EB Garamond"'), {
     family: ['Academico', 'EB Garamond'],
     size: 9,
+    bold: false,
+    italic: false,
 });
 
-function measureTextLocal(drawContext, txt, size) {
+function measureTextLocal(drawContext, txt, size, italic) {
     let res = {};
     // Make sure txt is nonempty, measure null codepoint if given nothing
     txt = txt || "\0";
     for(let i = 0; i < txt.length; i++) {
-        const metrics = drawContext.measureText(txt.codePointAt(i), size);
+        const metrics = drawContext.measureText(txt.codePointAt(i), size, italic);
         if (i == 0) {
             res = {
                 width: metrics[0],
@@ -195,9 +204,9 @@ globalThis.document = {
                 return {
                     measureText(txt) {
                         console.debug(`TempCanvasContext::measureText`);
-                        const { size } = parseFont(this.font);
+                        const { size, italic } = parseFont(this.font);
                         const c = new DrawContext(1, 1, 1.0);
-                        return measureTextLocal(c, txt, size);
+                        return measureTextLocal(c, txt, size, italic);
                     }
                 };
             }
@@ -225,9 +234,9 @@ class CanvasContext {
     }
     fillText(txt, x, y) {
         console.log(`fillText this.font=${this.font}`);
-        const { size } = parseFont(this.font);
+        const { size, italic } = parseFont(this.font);
         console.debug(`CanvasContext::fillText txt=${txt} x=${x} y=${y} size=${size}`);
-        this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size);
+        this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size, italic);
     }
     beginPath() {
         console.debug(`CanvasContext::beginPath`);
@@ -248,8 +257,8 @@ class CanvasContext {
     }
     measureText(txt) {
         console.debug(`CanvasContext::measureText`);
-        const { size } = parseFont(this.font);
-        return measureTextLocal(this.ctx, txt, size);
+        const { size, italic } = parseFont(this.font);
+        return measureTextLocal(this.ctx, txt, size, italic);
     }
     closePath() {
         console.debug(`CanvasContext::closePath`);

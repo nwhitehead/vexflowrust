@@ -14,6 +14,7 @@ use tiny_skia::{
 pub struct FontLibrary {
     bravura_font: FontVec,
     default_font: FontVec,
+    italic_font: FontVec,
 }
 
 impl FontLibrary {
@@ -25,6 +26,10 @@ impl FontLibrary {
                 include_bytes!("../fonts/AcademicoRegular.otf").to_vec(),
             )
             .unwrap(),
+            italic_font: FontVec::try_from_vec(
+                include_bytes!("../fonts/AcademicoItalic.otf").to_vec(),
+            )
+            .unwrap(),
         }
     }
 
@@ -32,6 +37,7 @@ impl FontLibrary {
         &self,
         codepoint: u32,
         size: f32,
+        italic: bool,
         x: f32,
         y: f32,
     ) -> (PxScaleFont<&FontVec>, Glyph) {
@@ -46,7 +52,7 @@ impl FontLibrary {
             return (chosen_font.as_scaled(scale), glyph);
         }
         // Fallback is default_font
-        let chosen_font = &self.default_font;
+        let chosen_font = if italic { &self.italic_font } else { &self.default_font };
         let scale = chosen_font.pt_to_px_scale(size).unwrap();
         let glyph2 = chosen_font
             .glyph_id(ch)
@@ -101,10 +107,10 @@ impl DrawContext {
     }
 
     #[qjs(rename = "measureText")]
-    pub fn measure_text(&mut self, txtch: u32, size: f64) -> std::vec::Vec<f64> {
+    pub fn measure_text(&mut self, txtch: u32, size: f64, italic: bool) -> std::vec::Vec<f64> {
         let (scaled_font, glyph) =
             self.font_library
-                .lookup_glyph(txtch, (size * self.zoom) as f32, 0.0, 0.0);
+                .lookup_glyph(txtch, (size * self.zoom) as f32, italic, 0.0, 0.0);
         let ascent = scaled_font.ascent();
         let descent = scaled_font.descent();
         let h_advance = scaled_font.h_advance(glyph.id);
@@ -131,7 +137,7 @@ impl DrawContext {
     }
 
     #[qjs(rename = "fillText")]
-    pub fn fill_text(&mut self, txt: String, x: f64, y: f64, size: f64) {
+    pub fn fill_text(&mut self, txt: String, x: f64, y: f64, size: f64, italic: bool) {
         let mut x_pos = x;
         let stride = self.surface.width();
         let width = self.width as i32;
@@ -140,6 +146,7 @@ impl DrawContext {
             let (scaled_font, glyph) = self.font_library.lookup_glyph(
                 ch as u32,
                 (size * self.zoom) as f32,
+                italic,
                 (x_pos * self.zoom) as f32,
                 (y * self.zoom) as f32,
             );
