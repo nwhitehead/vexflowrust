@@ -7,8 +7,8 @@ use rquickjs::{
     Class, Context, Ctx, Error, Function, Runtime, Value,
 };
 use tiny_skia::{
-    Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PremultipliedColorU8, Rect, Stroke,
-    Transform,
+    BlendMode, Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PremultipliedColorU8, Rect,
+    Stroke, Transform,
 };
 
 pub struct FontLibrary {
@@ -141,7 +141,18 @@ impl DrawContext {
     }
 
     #[qjs(rename = "fillText")]
-    pub fn fill_text(&mut self, txt: String, x: f64, y: f64, size: f64, italic: bool) {
+    pub fn fill_text(
+        &mut self,
+        txt: String,
+        x: f64,
+        y: f64,
+        size: f64,
+        italic: bool,
+        r: f64,
+        g: f64,
+        b: f64,
+        a: f64,
+    ) {
         let mut x_pos = x;
         let stride = self.surface.width();
         let width = self.width as i32;
@@ -156,9 +167,9 @@ impl DrawContext {
             );
             let pixels = self.surface.pixels_mut();
             let h_advance = scaled_font.h_advance(glyph.id) as f64 / self.zoom;
-            if let Some(g) = scaled_font.outline_glyph(glyph) {
-                let bounds = g.px_bounds();
-                g.draw(|xx, yy, c| {
+            if let Some(og) = scaled_font.outline_glyph(glyph) {
+                let bounds = og.px_bounds();
+                og.draw(|xx, yy, c| {
                     let xi = (xx as f32 + bounds.min.x) as i32;
                     let yi = (yy as f32 + bounds.min.y) as i32;
                     // Make sure we don't draw outside the size of pixmap
@@ -168,9 +179,16 @@ impl DrawContext {
                         && yi < (height as f64 * self.zoom) as i32
                     {
                         let offset: usize = (yi as u32 * stride + xi as u32).try_into().unwrap();
-                        let i: u8 = (c * 255.0) as u8;
+                        let true_alpha = (c as f64) * a;
+                        let i: u8 = (true_alpha * 255.0) as u8;
                         pixels[offset] = blend_color(
-                            &PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap(),
+                            &PremultipliedColorU8::from_rgba(
+                                (r * true_alpha * 255.0) as u8,
+                                (g * true_alpha * 255.0) as u8,
+                                (b * true_alpha * 255.0) as u8,
+                                i,
+                            )
+                            .unwrap(),
                             &pixels[offset],
                         );
                     }
@@ -223,7 +241,7 @@ impl DrawContext {
         );
     }
 
-    pub fn stroke(&mut self, width: f64) {
+    pub fn stroke(&mut self, width: f64, r: f64, g: f64, b: f64, a: f64) {
         assert!(self.in_path);
         assert!(self.path.is_some());
         self.in_path = false;
@@ -237,7 +255,12 @@ impl DrawContext {
             .unwrap();
         self.path = None;
         let mut paint = Paint::default();
-        paint.set_color_rgba8(0, 0, 0, 255);
+        paint.set_color_rgba8(
+            (r * 255.0) as u8,
+            (g * 255.0) as u8,
+            (b * 255.0) as u8,
+            (a * 255.0) as u8,
+        );
         paint.anti_alias = true;
         let mut stroke = Stroke::default();
         stroke.width = (width * self.zoom) as f32;
@@ -246,7 +269,7 @@ impl DrawContext {
             .stroke_path(&final_path, &paint, &stroke, Transform::identity(), None);
     }
 
-    pub fn fill(&mut self, r: f64, g: f64, b: f64) {
+    pub fn fill(&mut self, r: f64, g: f64, b: f64, a: f64) {
         assert!(self.in_path);
         assert!(self.path.is_some());
         self.in_path = false;
@@ -260,7 +283,12 @@ impl DrawContext {
             .unwrap();
         self.path = None;
         let mut paint = Paint::default();
-        paint.set_color_rgba8((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8, 255);
+        paint.set_color_rgba8(
+            (r * 255.0) as u8,
+            (g * 255.0) as u8,
+            (b * 255.0) as u8,
+            (a * 255.0) as u8,
+        );
         paint.anti_alias = true;
         self.surface.fill_path(
             &final_path,
@@ -276,6 +304,43 @@ impl DrawContext {
         let mut paint = Paint::default();
         paint.set_color_rgba8((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8, 255);
         paint.anti_alias = true;
+        self.surface.fill_rect(
+            Rect::from_xywh(
+                (x * self.zoom) as f32,
+                (y * self.zoom) as f32,
+                (width * self.zoom) as f32,
+                (height * self.zoom) as f32,
+            )
+            .unwrap(),
+            &paint,
+            Transform::identity(),
+            None,
+        );
+    }
+
+    /// Set surface to color given with alpha
+    /// So this can erase canvas, or set to background color
+    #[qjs(rename = "clearRect")]
+    pub fn clear_rect(
+        &mut self,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        r: f64,
+        g: f64,
+        b: f64,
+        a: f64,
+    ) {
+        let mut paint = Paint::default();
+        paint.set_color_rgba8(
+            (r * 255.0) as u8,
+            (g * 255.0) as u8,
+            (b * 255.0) as u8,
+            (a * 255.0) as u8,
+        );
+        paint.anti_alias = true;
+        paint.blend_mode = BlendMode::Source;
         self.surface.fill_rect(
             Rect::from_xywh(
                 (x * self.zoom) as f32,

@@ -155,6 +155,62 @@ assert_same(parseFont('9pt Academico,"EB Garamond"'), {
     italic: false,
 });
 
+/// Parse color text like "#f0f" to { r: 1, g: 0, b: 1 }
+function parseColor(color) {
+    const shortHex = color.match(/^#(.)(.)(.)$/);
+    if (shortHex) {
+        return {
+            r: parseInt(shortHex[1], 16) * 17 / 255.0,
+            g: parseInt(shortHex[2], 16) * 17 / 255.0,
+            b: parseInt(shortHex[3], 16) * 17 / 255.0,
+            a: 1,
+        }
+    }
+    const shortHexA = color.match(/^#(.)(.)(.)(.)$/);
+    if (shortHexA) {
+        return {
+            r: parseInt(shortHexA[1], 16) * 17 / 255.0,
+            g: parseInt(shortHexA[2], 16) * 17 / 255.0,
+            b: parseInt(shortHexA[3], 16) * 17 / 255.0,
+            a: parseInt(shortHexA[4], 16) * 17 / 255.0,
+        }
+    }
+    const longHex = color.match(/^#(..)(..)(..)$/);
+    if (longHex) {
+        return {
+            r: parseInt(longHex[1], 16) / 255.0,
+            g: parseInt(longHex[2], 16) / 255.0,
+            b: parseInt(longHex[3], 16) / 255.0,
+            a: 1,
+        }
+    }
+    const longHexA = color.match(/^#(..)(..)(..)(..)$/);
+    if (longHexA) {
+        return {
+            r: parseInt(longHexA[1], 16) / 255.0,
+            g: parseInt(longHexA[2], 16) / 255.0,
+            b: parseInt(longHexA[3], 16) / 255.0,
+            a: parseInt(longHexA[4], 16) / 255.0,
+        }
+    }
+    throw new Error(`Could not convert color "${color}"`);
+}
+
+assert_same(parseColor('#000'), { r: 0, g: 0, b: 0, a: 1});
+assert_same(parseColor('#800'), { r: 136/255, g: 0, b: 0, a: 1});
+assert_same(parseColor('#f00'), { r: 1, g: 0, b: 0, a: 1});
+assert_same(parseColor('#0f0'), { r: 0, g: 1, b: 0, a: 1});
+assert_same(parseColor('#00f'), { r: 0, g: 0, b: 1, a: 1});
+assert_same(parseColor('#0000'), { r: 0, g: 0, b: 0, a: 0});
+assert_same(parseColor('#f000'), { r: 1, g: 0, b: 0, a: 0});
+assert_same(parseColor('#0f00'), { r: 0, g: 1, b: 0, a: 0});
+assert_same(parseColor('#00f0'), { r: 0, g: 0, b: 1, a: 0});
+assert_same(parseColor('#000f'), { r: 0, g: 0, b: 0, a: 1});
+assert_same(parseColor('#000000'), { r: 0, g: 0, b: 0, a: 1});
+assert_same(parseColor('#800000'), { r: 128/255, g: 0, b: 0, a: 1});
+assert_same(parseColor('#008000'), { r: 0, g: 128/255, b: 0, a: 1});
+assert_same(parseColor('#000080'), { r: 0, g: 0, b: 128/255, a: 1});
+
 function measureTextLocal(drawContext, txt, size, italic) {
     let res = {};
     // Make sure txt is nonempty, measure null codepoint if given nothing
@@ -215,13 +271,14 @@ globalThis.document = {
 };
 
 class CanvasContext {
-    constructor(ctx, zoom) {
+    constructor(ctx, zoom, canvas) {
         console.debug(`CanvasContext constructed`);
         // ctx is the DrawContext
         this.ctx = ctx;
         this.zoom = zoom;
         // Need canvas field to hold final computed scaled width and height
         this.canvas = { width:0, height: 0 };
+        this.actualCanvas = canvas;
         // Whether we are drawing a path
         this.inPath = false;
         // Global offset for subpixel aliasing issues
@@ -236,7 +293,11 @@ class CanvasContext {
         console.log(`fillText this.font=${this.font}`);
         const { size, italic } = parseFont(this.font);
         console.debug(`CanvasContext::fillText txt=${txt} x=${x} y=${y} size=${size}`);
-        this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size, italic);
+        const r = this.actualCanvas.foreground.r;
+        const g = this.actualCanvas.foreground.g;
+        const b = this.actualCanvas.foreground.b;
+        const a = this.actualCanvas.foreground.a;
+        this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size, italic, r, g, b, a);
     }
     beginPath() {
         console.debug(`CanvasContext::beginPath`);
@@ -268,15 +329,26 @@ class CanvasContext {
         console.debug(`CanvasContext::fill`);
         assert(this.inPath === true);
         this.inPath = false;
-        this.ctx.fill(0, 0, 0);
+        const r = this.actualCanvas.foreground.r;
+        const g = this.actualCanvas.foreground.g;
+        const b = this.actualCanvas.foreground.b;
+        const a = this.actualCanvas.foreground.a;
+        this.ctx.fill(r, g, b, a);
     }
     fillRect(x, y, width, height) {
         console.debug(`CanvasContext::fillRect ${x + this.offset.x}, ${y + this.offset.y}, ${width}, ${height}`);
-        this.ctx.fillRect(x + this.offset.x, y + this.offset.y, width, height, 0, 0, 0);
+        const r = this.actualCanvas.foreground.r;
+        const g = this.actualCanvas.foreground.g;
+        const b = this.actualCanvas.foreground.b;
+        this.ctx.fillRect(x + this.offset.x, y + this.offset.y, width, height, r, g, b);
     }
     clearRect(x, y, width, height) {
         console.debug(`CanvasContext::clearRect(${x}, ${y}, ${width}, ${height})`);
-        this.ctx.fillRect(x + this.offset.x, y + this.offset.y, width, height, 1, 1, 1);
+        const r = this.actualCanvas.background.r;
+        const g = this.actualCanvas.background.g;
+        const b = this.actualCanvas.background.b;
+        const a = this.actualCanvas.background.a;
+        this.ctx.clearRect(x + this.offset.x, y + this.offset.y, width, height, r, g, b, a);
     }
     lineTo(x, y) {
         console.debug(`CanvasContext::lineTo`);
@@ -304,21 +376,27 @@ class CanvasContext {
         console.debug(`CanvasContext::stroke`);
         assert(this.inPath === true);
         this.inPath = false;
-        this.ctx.stroke(this.lineWidth || 1.0);
+        const r = this.actualCanvas.foreground.r;
+        const g = this.actualCanvas.foreground.g;
+        const b = this.actualCanvas.foreground.b;
+        const a = this.actualCanvas.foreground.a;
+        this.ctx.stroke(this.lineWidth || 1.0, r, g, b, a);
     }
 }
 
 export class Canvas {
-    constructor(width, height, zoom) {
+    constructor(width, height, zoom, background, foreground) {
         this.width = width;
         this.height = height;
-        this.zoom = zoom || 1.0;
+        this.zoom = zoom;
+        this.background = parseColor(background);
+        this.foreground = parseColor(foreground);
         this.drawContext = new DrawContext(width, height, this.zoom);
         // Set opaque page
-        this.drawContext.clear(1.0, 0.99, 0.97, 1);
+        this.drawContext.clear(this.background.r, this.background.g, this.background.b, this.background.a);
     }
     getContext() {
-        return new CanvasContext(this.drawContext, this.zoom);
+        return new CanvasContext(this.drawContext, this.zoom, this);
     }
     // Need to have toDataURL for type detection to pass
     toDataURL() {
