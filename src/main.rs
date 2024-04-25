@@ -1,4 +1,4 @@
-use ab_glyph::{Glyph, Font, FontVec, ScaleFont, PxScaleFont};
+use ab_glyph::{Glyph, Font, FontVec, ScaleFont, PxScaleFont, point};
 use rquickjs::{
     class::Trace,
     context::EvalOptions,
@@ -24,22 +24,20 @@ impl FontLibrary {
         }
     }
 
-    pub fn lookup_glyph(&self, codepoint:u32, size: f64) -> (PxScaleFont<&FontVec>, Glyph) {
+    pub fn lookup_glyph(&self, codepoint:u32, size: f32, x: f32, y: f32) -> (PxScaleFont<&FontVec>, Glyph) {
         let ch = char::from_u32(codepoint).unwrap();
         // First try Bravura
         let chosen_font = &self.bravura_font;
-        let scale = chosen_font.pt_to_px_scale(size as f32).unwrap();
-        let scaled_font = chosen_font.as_scaled(scale);
-        let glyph = scaled_font.scaled_glyph(ch);
-        if let Some(_) = scaled_font.outline_glyph(glyph.clone()) {
-            return (scaled_font, glyph);
+        let scale = chosen_font.pt_to_px_scale(size).unwrap();
+        let glyph = chosen_font.glyph_id(ch).with_scale_and_position(scale, point(x, y));
+        if let Some(_) = chosen_font.outline_glyph(glyph.clone()) {
+            return (chosen_font.as_scaled(scale), glyph);
         }
         // Fallback is default_font
         let chosen_font = &self.default_font;
-        let scale = chosen_font.pt_to_px_scale(size as f32).unwrap();
-        let scaled_font = chosen_font.as_scaled(scale);
-        let glyph2 = scaled_font.scaled_glyph(ch);
-        return (scaled_font, glyph2);
+        let scale = chosen_font.pt_to_px_scale(size).unwrap();
+        let glyph2 = chosen_font.glyph_id(ch).with_scale_and_position(scale, point(x, y));
+        return (chosen_font.as_scaled(scale), glyph2);
     }
 }
 
@@ -89,7 +87,7 @@ impl DrawContext {
 
     #[qjs(rename = "measureText")]
     pub fn measure_text(&mut self, txtch: u32, size: f64) -> std::vec::Vec<f64> {
-        let (scaled_font, glyph) = self.font_library.lookup_glyph(txtch, size * self.zoom);
+        let (scaled_font, glyph) = self.font_library.lookup_glyph(txtch, (size * self.zoom) as f32, 0.0, 0.0);
         let ascent = scaled_font.ascent();
         let descent = scaled_font.descent();
         let h_advance = scaled_font.h_advance(glyph.id);
@@ -108,14 +106,14 @@ impl DrawContext {
         let width = self.width as i32;
         let height = self.height as i32;
         for ch in txt.chars() {
-            let (scaled_font, glyph) = self.font_library.lookup_glyph(ch as u32, size * self.zoom);
+            let (scaled_font, glyph) = self.font_library.lookup_glyph(ch as u32, (size * self.zoom) as f32, (x_pos * self.zoom) as f32, (y * self.zoom) as f32);
             let pixels = self.surface.pixels_mut();
             let h_advance = scaled_font.h_advance(glyph.id) as f64 / self.zoom;
             if let Some(g) = scaled_font.outline_glyph(glyph) {
                 let bounds = g.px_bounds();
                 g.draw(|xx, yy, c| {
-                    let xi = (xx as f32 + (x_pos * self.zoom) as f32 + bounds.min.x) as i32;
-                    let yi = (yy as f32 + (y * self.zoom) as f32 + bounds.min.y) as i32;
+                    let xi = (xx as f32 + bounds.min.x) as i32;
+                    let yi = (yy as f32 + bounds.min.y) as i32;
                     // Make sure we don't draw outside the size of pixmap
                     if xi >= 0 && xi < (width as f64 * self.zoom) as i32 && yi >= 0 && yi < (height as f64 * self.zoom) as i32 {
                         let offset: usize = (yi as u32 * stride + xi as u32).try_into().unwrap();
