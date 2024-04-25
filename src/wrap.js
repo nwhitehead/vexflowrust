@@ -79,6 +79,7 @@ function measureTextLocal(drawContext, txt, size) {
 globalThis.document = {
     getElementById(id) {
         // Should never get here
+        console.log(`id=${id}`);
         assert(false, "getElementById called");
     },
     createElement(t) {

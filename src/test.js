@@ -3,8 +3,8 @@ import { Canvas } from "./src/wrap.js";
 import './src/vexflow-debug.js';
 
 const VF = window.VexFlow;
-const width = 500;
-const height = 400;
+const width = 800;
+const height = 600;
 
 export async function main() {
 
@@ -12,7 +12,6 @@ export async function main() {
 
     const canvas = new Canvas(width, height, 3.0);
     const ctx = VF.Renderer.buildContext(canvas, 1, width, height);
-
     // Script does not have lexical scope so can't see the const vf, so expose it globally.
     globalThis.VF = VF;
     globalThis.context = ctx;
