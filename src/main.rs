@@ -1,4 +1,4 @@
-use ab_glyph::{Glyph, Font, FontVec, ScaleFont, PxScaleFont, point};
+use ab_glyph::{point, Font, FontVec, Glyph, PxScaleFont, ScaleFont};
 use rquickjs::{
     class::Trace,
     context::EvalOptions,
@@ -7,8 +7,8 @@ use rquickjs::{
     Class, Context, Ctx, Error, Function, Runtime, Value,
 };
 use tiny_skia::{
-    Color,
-    FillRule, LineCap, Paint, PathBuilder, Pixmap, PremultipliedColorU8, Rect, Stroke, Transform,
+    Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PremultipliedColorU8, Rect, Stroke,
+    Transform,
 };
 
 pub struct FontLibrary {
@@ -19,24 +19,38 @@ pub struct FontLibrary {
 impl FontLibrary {
     pub fn new() -> Self {
         FontLibrary {
-            bravura_font: FontVec::try_from_vec(include_bytes!("../fonts/Bravura.otf").to_vec()).unwrap(),
-            default_font: FontVec::try_from_vec(include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf").to_vec()).unwrap(),
+            bravura_font: FontVec::try_from_vec(include_bytes!("../fonts/Bravura.otf").to_vec())
+                .unwrap(),
+            default_font: FontVec::try_from_vec(
+                include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf").to_vec(),
+            )
+            .unwrap(),
         }
     }
 
-    pub fn lookup_glyph(&self, codepoint:u32, size: f32, x: f32, y: f32) -> (PxScaleFont<&FontVec>, Glyph) {
+    pub fn lookup_glyph(
+        &self,
+        codepoint: u32,
+        size: f32,
+        x: f32,
+        y: f32,
+    ) -> (PxScaleFont<&FontVec>, Glyph) {
         let ch = char::from_u32(codepoint).unwrap();
         // First try Bravura
         let chosen_font = &self.bravura_font;
         let scale = chosen_font.pt_to_px_scale(size).unwrap();
-        let glyph = chosen_font.glyph_id(ch).with_scale_and_position(scale, point(x, y));
+        let glyph = chosen_font
+            .glyph_id(ch)
+            .with_scale_and_position(scale, point(x, y));
         if let Some(_) = chosen_font.outline_glyph(glyph.clone()) {
             return (chosen_font.as_scaled(scale), glyph);
         }
         // Fallback is default_font
         let chosen_font = &self.default_font;
         let scale = chosen_font.pt_to_px_scale(size).unwrap();
-        let glyph2 = chosen_font.glyph_id(ch).with_scale_and_position(scale, point(x, y));
+        let glyph2 = chosen_font
+            .glyph_id(ch)
+            .with_scale_and_position(scale, point(x, y));
         return (chosen_font.as_scaled(scale), glyph2);
     }
 }
@@ -77,7 +91,8 @@ impl DrawContext {
             width,
             height,
             zoom,
-            surface: Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32).unwrap(),
+            surface: Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
+                .unwrap(),
             font: "".to_string(),
             in_path: false,
             path: None,
@@ -87,16 +102,32 @@ impl DrawContext {
 
     #[qjs(rename = "measureText")]
     pub fn measure_text(&mut self, txtch: u32, size: f64) -> std::vec::Vec<f64> {
-        let (scaled_font, glyph) = self.font_library.lookup_glyph(txtch, (size * self.zoom) as f32, 0.0, 0.0);
+        let (scaled_font, glyph) =
+            self.font_library
+                .lookup_glyph(txtch, (size * self.zoom) as f32, 0.0, 0.0);
         let ascent = scaled_font.ascent();
         let descent = scaled_font.descent();
         let h_advance = scaled_font.h_advance(glyph.id);
         let v_advance = scaled_font.v_advance(glyph.id);
         if let Some(g) = scaled_font.outline_glyph(glyph) {
             let bounds = g.px_bounds();
-            return vec![h_advance as f64, v_advance as f64, ascent as f64, descent as f64, bounds.min.y as f64, bounds.max.y as f64];
+            return vec![
+                h_advance as f64,
+                v_advance as f64,
+                ascent as f64,
+                descent as f64,
+                bounds.min.y as f64,
+                bounds.max.y as f64,
+            ];
         }
-        return vec![h_advance as f64, v_advance as f64, ascent as f64, descent as f64, 0.0, 0.0];
+        return vec![
+            h_advance as f64,
+            v_advance as f64,
+            ascent as f64,
+            descent as f64,
+            0.0,
+            0.0,
+        ];
     }
 
     #[qjs(rename = "fillText")]
@@ -106,7 +137,12 @@ impl DrawContext {
         let width = self.width as i32;
         let height = self.height as i32;
         for ch in txt.chars() {
-            let (scaled_font, glyph) = self.font_library.lookup_glyph(ch as u32, (size * self.zoom) as f32, (x_pos * self.zoom) as f32, (y * self.zoom) as f32);
+            let (scaled_font, glyph) = self.font_library.lookup_glyph(
+                ch as u32,
+                (size * self.zoom) as f32,
+                (x_pos * self.zoom) as f32,
+                (y * self.zoom) as f32,
+            );
             let pixels = self.surface.pixels_mut();
             let h_advance = scaled_font.h_advance(glyph.id) as f64 / self.zoom;
             if let Some(g) = scaled_font.outline_glyph(glyph) {
@@ -115,10 +151,17 @@ impl DrawContext {
                     let xi = (xx as f32 + bounds.min.x) as i32;
                     let yi = (yy as f32 + bounds.min.y) as i32;
                     // Make sure we don't draw outside the size of pixmap
-                    if xi >= 0 && xi < (width as f64 * self.zoom) as i32 && yi >= 0 && yi < (height as f64 * self.zoom) as i32 {
+                    if xi >= 0
+                        && xi < (width as f64 * self.zoom) as i32
+                        && yi >= 0
+                        && yi < (height as f64 * self.zoom) as i32
+                    {
                         let offset: usize = (yi as u32 * stride + xi as u32).try_into().unwrap();
                         let i: u8 = (c * 255.0) as u8;
-                        pixels[offset] = blend_color(&PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap(), &pixels[offset]);
+                        pixels[offset] = blend_color(
+                            &PremultipliedColorU8::from_rgba(0, 0, 0, i).unwrap(),
+                            &pixels[offset],
+                        );
                     }
                 });
                 x_pos += h_advance;
@@ -161,10 +204,12 @@ impl DrawContext {
     pub fn quadratic_curve_to(&mut self, x1: f64, y1: f64, x: f64, y: f64) {
         assert!(self.in_path);
         assert!(self.path.is_some());
-        self.path
-            .as_mut()
-            .expect("path must be created")
-            .quad_to((x1 * self.zoom) as f32, (y1 * self.zoom) as f32, (x * self.zoom) as f32, (y * self.zoom) as f32);
+        self.path.as_mut().expect("path must be created").quad_to(
+            (x1 * self.zoom) as f32,
+            (y1 * self.zoom) as f32,
+            (x * self.zoom) as f32,
+            (y * self.zoom) as f32,
+        );
     }
 
     pub fn stroke(&mut self, width: f64) {
@@ -221,7 +266,13 @@ impl DrawContext {
         paint.set_color_rgba8((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8, 255);
         paint.anti_alias = true;
         self.surface.fill_rect(
-            Rect::from_xywh((x * self.zoom) as f32, (y * self.zoom) as f32, (width * self.zoom) as f32, (height * self.zoom) as f32).unwrap(),
+            Rect::from_xywh(
+                (x * self.zoom) as f32,
+                (y * self.zoom) as f32,
+                (width * self.zoom) as f32,
+                (height * self.zoom) as f32,
+            )
+            .unwrap(),
             &paint,
             Transform::identity(),
             None,
@@ -229,9 +280,9 @@ impl DrawContext {
     }
 
     pub fn clear(&mut self, r: f64, g: f64, b: f64, a: f64) {
-        self.surface.fill(Color::from_rgba(r as f32, g as f32, b as f32, a as f32).unwrap());
+        self.surface
+            .fill(Color::from_rgba(r as f32, g as f32, b as f32, a as f32).unwrap());
     }
-
 }
 
 pub fn print(msg: String) {
