@@ -192,7 +192,7 @@ impl DrawContext {
             .stroke_path(&final_path, &paint, &stroke, Transform::identity(), None);
     }
 
-    pub fn fill(&mut self) {
+    pub fn fill(&mut self, r: f64, g: f64, b: f64) {
         assert!(self.in_path);
         assert!(self.path.is_some());
         self.in_path = false;
@@ -206,7 +206,7 @@ impl DrawContext {
             .unwrap();
         self.path = None;
         let mut paint = Paint::default();
-        paint.set_color_rgba8(0, 0, 0, 255);
+        paint.set_color_rgba8((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8, 255);
         paint.anti_alias = true;
         self.surface.fill_path(
             &final_path,
@@ -218,22 +218,9 @@ impl DrawContext {
     }
 
     #[qjs(rename = "fillRect")]
-    pub fn fill_rect(&mut self, x: f64, y: f64, width: f64, height: f64) {
+    pub fn fill_rect(&mut self, x: f64, y: f64, width: f64, height: f64, r: f64, g: f64, b: f64) {
         let mut paint = Paint::default();
-        paint.set_color_rgba8(0, 0, 0, 255);
-        paint.anti_alias = true;
-        self.surface.fill_rect(
-            Rect::from_xywh((x * self.zoom) as f32, (y * self.zoom) as f32, (width * self.zoom) as f32, (height * self.zoom) as f32).unwrap(),
-            &paint,
-            Transform::identity(),
-            None,
-        );
-    }
-
-    #[qjs(rename = "clearRect")]
-    pub fn clear_rect(&mut self, x: f64, y: f64, width: f64, height: f64) {
-        let mut paint = Paint::default();
-        paint.set_color_rgba8(0, 0, 0, 0);
+        paint.set_color_rgba8((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8, 255);
         paint.anti_alias = true;
         self.surface.fill_rect(
             Rect::from_xywh((x * self.zoom) as f32, (y * self.zoom) as f32, (width * self.zoom) as f32, (height * self.zoom) as f32).unwrap(),

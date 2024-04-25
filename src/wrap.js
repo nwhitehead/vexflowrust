@@ -64,10 +64,10 @@ function measureTextLocal(drawContext, txt, size) {
         if (i == 0) {
             res = {
                 width: metrics[0],
-                fontBoundingBoxAscent: metrics[2],
-                fontBoundingBoxDescent: metrics[3],
-                actualBoundingBoxAscent: metrics[4],
-                actualBoundingBoxDescent: metrics[5],
+                fontBoundingBoxAscent: metrics[2] * -1.0,
+                fontBoundingBoxDescent: metrics[3] * 1.0,
+                actualBoundingBoxAscent: metrics[4] * -1.0,
+                actualBoundingBoxDescent: metrics[5] * 1.0,
             };
         } else {
             res.width += metrics[0];
@@ -172,15 +172,15 @@ class CanvasContext {
         console.debug(`CanvasContext::fill`);
         assert(this.inPath === true);
         this.inPath = false;
-        this.ctx.fill();
+        this.ctx.fill(0, 0, 0);
     }
     fillRect(x, y, width, height) {
         console.debug(`CanvasContext::fillRect`);
-        this.ctx.fillRect(x + this.rectOffset.x, y + this.rectOffset.y, width, height);
+        this.ctx.fillRect(x + this.rectOffset.x, y + this.rectOffset.y, width, height, 0, 0, 0);
     }
     clearRect(x, y, width, height) {
         console.debug(`CanvasContext::clearRect(${x}, ${y}, ${width}, ${height})`);
-        this.ctx.clearRect(x + this.rectOffset.x, y + this.rectOffset.y, width, height);
+        this.ctx.fillRect(x + this.rectOffset.x, y + this.rectOffset.y, width, height, 1, 1, 1);
     }
     lineTo(x, y) {
         console.debug(`CanvasContext::lineTo`);
