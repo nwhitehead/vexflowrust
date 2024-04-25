@@ -17,7 +17,7 @@ const notes = [
             { str: 3, fret: 9 },
         ],
         duration: "q",
-    }),//.addModifier(new Bend("Full"), 1),
+    }).addModifier(new Bend([{ type: Bend.UP, text: 'Full' }]), 1),
 
     // A single note with a harsh vibrato
     new TabNote({
