@@ -307,7 +307,6 @@ where
 }
 
 fn format_exception(v: Value) -> String {
-    println!("{}", v.is_error());
     if v.is_error() || v.is_exception() {
         let ex = v.as_exception().unwrap();
         return format!(

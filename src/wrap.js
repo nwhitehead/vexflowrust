@@ -34,26 +34,117 @@ globalThis.assert = function(condition, msg) {
     }
 }
 
+// Some helpers for deep equality testing
+function isPlainObject(value) {
+    return value.constructor === Object;
+}
+function isEqual(a, b) {
+    if (Object.is(a, b)) return true;
+    if (typeof a !== typeof b) return false;
+    if (Array.isArray(a) && Array.isArray(b))
+        return isSameArray(a, b);
+    if (isPlainObject(a) && isPlainObject(b))
+        return isSameObject(a, b);
+    // Lots of things not supported
+    return false;
+}
+function isSameObject(a, b) {
+    const keys1 = Object.keys(a).sort();
+    const keys2 = Object.keys(b).sort();
+    if (!isEqual(keys1, keys2)) return false;
+    for (const key of keys1) {
+        if (!isEqual(a[key], b[key])) return false;
+    }
+    return true;
+}
+function isSameArray(a, b) {
+    if (a.length !== b.length) return false;
+    return a.every((element, index) => isEqual(element, b[index]));
+}
+
+globalThis.assert_same = function(left, right, msg) {
+    if (!isEqual(left, right)) {
+        throw new Error(`Assertion failed: Different values:
+${'\u2550'.repeat(100)}
+${JSON.stringify(left, null, 2)}
+${'\u2500'.repeat(100)}
+${JSON.stringify(right, null, 2)}
+${'\u2550'.repeat(100)}`);
+    }
+}
+
 // Need to have window object so that we get window.VexFlow
 // Should not need any methods (setTimeout etc.)
 globalThis.window = {};
 
-/// Parse full fontname like "30pt Bravura,Academico" into { font: 'Bravura', size: 30 }
-function parseFont(fontname) {
-    if (fontname === undefined) {
-        return null;
-    }
-    const parts = fontname.split(',');
-    const part = parts[0];
-    const match = part.match(/^(\d+)pt (.*)/);
-    if (match) {
-        return {
-            font: match[2],
-            size: Number(match[1]),
+/// Parse full fontname like "30pt Bravura,Academico" into:
+///     { family: ['Bravura', 'Academico'], size: 30 }
+/// This is not full CSS parsing, just enough to get by.
+///
+/// Supports:
+///     family with fallbacks, optional quotes for spaces in family name
+///     size (pt only)
+///     bold
+///     italic
+function parseFont(font) {
+    assert(font, "No argument given to parseFont");
+    let res = {};
+    // First split on spaces (but not spaces in quotes)
+    const parts = font.match(/(?:[^\s"]+|"[^"]*")+/g)
+    for (const part of parts) {
+        if (part === 'bold') {
+            res['bold'] = true;
+            continue;
         }
+        if (part === 'italic') {
+            res['italic'] = true;
+            continue;
+        }
+        const sizeMatch = part.match(/^(\d+(\.\d*)?)pt/);
+        if (sizeMatch) {
+            res['size'] = Number(sizeMatch[1]);
+            continue;
+        }
+        // If we get here, assume is font family maybe with fallbacks
+        let familyParts = part.split(',');
+        // Remove any quotes around family names
+        for (let i = 0; i < familyParts.length; i++) {
+            if (familyParts[i].startsWith('"') && familyParts[i].endsWith('"')) {
+                familyParts[i] = familyParts[i].replaceAll('"', '')
+            }
+        }
+        res['family'] = familyParts;
     }
-    return null;
+    return res;
 }
+
+assert_same(parseFont('30pt Bravura,Academico'), {
+    family: ['Bravura', 'Academico'],
+    size: 30,
+});
+assert_same(parseFont('9pt Academico'), {
+    family: ['Academico'],
+    size: 9,
+});
+assert_same(parseFont('italic 9pt Academico'), {
+    family: ['Academico'],
+    size: 9,
+    italic: true,
+});
+assert_same(parseFont('italic 10.72pt Academico'), {
+    family: ['Academico'],
+    size: 10.72,
+    italic: true,
+});
+assert_same(parseFont('bold 12pt Lato'), {
+    family: ['Lato'],
+    size: 12,
+    bold: true,
+});
+assert_same(parseFont('9pt Academico,"EB Garamond"'), {
+    family: ['Academico', 'EB Garamond'],
+    size: 9,
+});
 
 function measureTextLocal(drawContext, txt, size) {
     let res = {};
@@ -133,6 +224,7 @@ class CanvasContext {
         return 1;
     }
     fillText(txt, x, y) {
+        console.log(`fillText this.font=${this.font}`);
         const { size } = parseFont(this.font);
         console.debug(`CanvasContext::fillText txt=${txt} x=${x} y=${y} size=${size}`);
         this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size);
