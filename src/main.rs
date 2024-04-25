@@ -52,7 +52,11 @@ impl FontLibrary {
             return (chosen_font.as_scaled(scale), glyph);
         }
         // Fallback is default_font
-        let chosen_font = if italic { &self.italic_font } else { &self.default_font };
+        let chosen_font = if italic {
+            &self.italic_font
+        } else {
+            &self.default_font
+        };
         let scale = chosen_font.pt_to_px_scale(size).unwrap();
         let glyph2 = chosen_font
             .glyph_id(ch)
