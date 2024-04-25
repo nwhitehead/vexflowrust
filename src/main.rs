@@ -22,7 +22,7 @@ impl FontLibrary {
             bravura_font: FontVec::try_from_vec(include_bytes!("../fonts/Bravura.otf").to_vec())
                 .unwrap(),
             default_font: FontVec::try_from_vec(
-                include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf").to_vec(),
+                include_bytes!("../fonts/AcademicoRegular.otf").to_vec(),
             )
             .unwrap(),
         }
