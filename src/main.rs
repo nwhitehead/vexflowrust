@@ -7,8 +7,8 @@ use rquickjs::{
     Class, Context, Ctx, Error, Function, Runtime, Value,
 };
 use tiny_skia::{
-    BlendMode, Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PremultipliedColorU8, Rect,
-    Stroke, Transform,
+    BlendMode, Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint,
+    PremultipliedColorU8, Rect, Stroke, Transform,
 };
 
 pub struct FontLibrary {
@@ -195,41 +195,50 @@ impl DrawContext {
         let width = self.width as i32;
         let height = self.height as i32;
         for ch in txt.chars() {
+            let x_real = (x_pos * self.zoom) as f32;
+            let x_i = x_real as i32;
+            let x_frac = x_real - x_i as f32;
+            let y_real = (y * self.zoom) as f32;
+            let y_i = y_real as i32;
+            let y_frac = y_real - y_i as f32;
             let (scaled_font, glyph) = self.font_library.lookup_glyph(
                 ch as u32,
                 (size * self.zoom) as f32,
                 italic,
-                (x_pos * self.zoom) as f32,
-                (y * self.zoom) as f32,
+                x_frac,
+                y_frac,
             );
             let pixels = self.surface.pixels_mut();
             let h_advance = scaled_font.h_advance(glyph.id) as f64 / self.zoom;
             if let Some(og) = scaled_font.outline_glyph(glyph) {
                 let bounds = og.px_bounds();
+                let rg_width =
+                    (f32::ceil(bounds.max.x) as i32 - f32::floor(bounds.min.x) as i32 + 1) as u32;
+                let rg_height =
+                    (f32::ceil(bounds.max.y) as i32 - f32::floor(bounds.min.y) as i32 + 1) as u32;
+                let mut rendered_glyph = Pixmap::new(rg_width, rg_height).unwrap();
+                let rg_pixels = rendered_glyph.pixels_mut();
                 og.draw(|xx, yy, c| {
-                    let xi = (xx as f32 + bounds.min.x) as i32;
-                    let yi = (yy as f32 + bounds.min.y) as i32;
-                    // Make sure we don't draw outside the size of pixmap
-                    if xi >= 0
-                        && xi < (width as f64 * self.zoom) as i32
-                        && yi >= 0
-                        && yi < (height as f64 * self.zoom) as i32
-                    {
-                        let offset: usize = (yi as u32 * stride + xi as u32).try_into().unwrap();
-                        let true_alpha = (c as f64) * a;
-                        let i: u8 = (true_alpha * 255.0) as u8;
-                        pixels[offset] = blend_color(
-                            &PremultipliedColorU8::from_rgba(
-                                (r * true_alpha * 255.0) as u8,
-                                (g * true_alpha * 255.0) as u8,
-                                (b * true_alpha * 255.0) as u8,
-                                i,
-                            )
-                            .unwrap(),
-                            &pixels[offset],
-                        );
-                    }
+                    let true_alpha = (c as f64) * a;
+                    let rg_xi = xx as u32;
+                    let rg_yi = yy as u32;
+                    rg_pixels[(rg_xi + rg_yi * rg_width) as usize] =
+                        PremultipliedColorU8::from_rgba(
+                            (r * true_alpha * 255.0) as u8,
+                            (g * true_alpha * 255.0) as u8,
+                            (b * true_alpha * 255.0) as u8,
+                            (true_alpha * 255.0) as u8,
+                        )
+                        .unwrap();
                 });
+                self.surface.draw_pixmap(
+                    x_i + bounds.min.x as i32,
+                    y_i + bounds.min.y as i32,
+                    rendered_glyph.as_ref(),
+                    &PixmapPaint::default(),
+                    Transform::identity(),
+                    None,
+                );
                 x_pos += h_advance;
             }
         }
@@ -265,10 +274,7 @@ impl DrawContext {
     #[qjs(rename = "closePath")]
     pub fn close_path(&mut self) {
         assert!(self.path.is_some());
-        self.path
-            .as_mut()
-            .expect("path must be created")
-            .close();
+        self.path.as_mut().expect("path must be created").close();
     }
     #[qjs(rename = "quadraticCurveTo")]
     pub fn quadratic_curve_to(&mut self, x1: f64, y1: f64, x: f64, y: f64) {
@@ -335,13 +341,8 @@ impl DrawContext {
             (a * 255.0) as u8,
         );
         paint.anti_alias = true;
-        self.surface.fill_path(
-            &final_path,
-            &paint,
-            FillRule::Winding,
-            self.transform,
-            None,
-        );
+        self.surface
+            .fill_path(&final_path, &paint, FillRule::Winding, self.transform, None);
     }
 
     #[qjs(rename = "fillRect")]
