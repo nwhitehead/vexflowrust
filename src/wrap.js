@@ -1,5 +1,5 @@
 
-globalThis.DEBUG = true;
+globalThis.DEBUG = false;
 
 function anyToString(v) {
     if (v === undefined) {
@@ -93,9 +93,10 @@ const qunitAssert = {
 
 globalThis.QUnit = {
     module(msg) {
-        this.module = msg;
+        this.moduleName = msg;
     },
     test(name, func) {
+        this.testName = name;
         qunitAssert.test = {
             module: { name },
         };
