@@ -401,6 +401,14 @@ class CanvasContext {
     }
     fillRect(x, y, width, height) {
         console.debug(`CanvasContext::fillRect ${x + this.offset.x}, ${y + this.offset.y}, ${width}, ${height} fillStyle=${this.fillStyle}`);
+        if (width < 0) {
+            x += width;
+            width *= -1;
+        }
+        if (height < 0) {
+            y += height;
+            height *= -1;
+        }
         const { r, g, b, a } = this.getFillColor();
         this.ctx.fillRect(x + this.offset.x, y + this.offset.y, width, height, r, g, b);
     }
