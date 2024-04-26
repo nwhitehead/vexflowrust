@@ -1,5 +1,5 @@
 /*!
- * VexFlow 5.0.0-alpha.3   2024-04-22T20:20:34.231Z   4a1b045bb03b90e796f4e985d62c0c4d432cb98f
+ * VexFlow 5.0.0-alpha.3   2024-04-26T16:05:05.751Z   4a1b045bb03b90e796f4e985d62c0c4d432cb98f
  * Copyright (c) 2023-present VexFlow contributors (see https://github.com/vexflow/vexflow/blob/main/AUTHORS.md).
  */
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -31,7 +31,7 @@ __webpack_require__.r(__webpack_exports__);
 // Gruntfile.js uses string-replace-loader to replace these values during build time.
 const VERSION = '5.0.0-alpha.3';
 const ID = '4a1b045bb03b90e796f4e985d62c0c4d432cb98f';
-const DATE = '2024-04-22T20:20:34.231Z';
+const DATE = '2024-04-26T16:05:05.751Z';
 
 
 /***/ }),
@@ -26193,6 +26193,7 @@ VexFlow.GraceTabNote = _gracetabnote__WEBPACK_IMPORTED_MODULE_26__.GraceTabNote;
 VexFlow.KeyManager = _keymanager__WEBPACK_IMPORTED_MODULE_27__.KeyManager;
 VexFlow.KeySignature = _keysignature__WEBPACK_IMPORTED_MODULE_28__.KeySignature;
 VexFlow.KeySigNote = _keysignote__WEBPACK_IMPORTED_MODULE_29__.KeySigNote;
+VexFlow.Metrics = _metrics__WEBPACK_IMPORTED_MODULE_30__.Metrics;
 VexFlow.Modifier = _modifier__WEBPACK_IMPORTED_MODULE_31__.Modifier;
 VexFlow.ModifierContext = _modifiercontext__WEBPACK_IMPORTED_MODULE_32__.ModifierContext;
 VexFlow.MultiMeasureRest = _multimeasurerest__WEBPACK_IMPORTED_MODULE_33__.MultiMeasureRest;

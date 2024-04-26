@@ -376,11 +376,11 @@ class CanvasContext {
         this.ctx.clearRect(x + this.offset.x, y + this.offset.y, width, height, r, g, b, a);
     }
     lineTo(x, y) {
-        console.debug(`CanvasContext::lineTo`);
+        console.debug(`CanvasContext::lineTo ${x}, ${y}`);
         this.ctx.lineTo(x + this.offset.x, y + this.offset.y);
     }
     moveTo(x, y) {
-        console.debug(`CanvasContext::moveTo`);
+        console.debug(`CanvasContext::moveTo ${x}, ${y}`);
         this.ctx.moveTo(x + this.offset.x, y + this.offset.y);
     }
     restore() {

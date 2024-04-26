@@ -6,7 +6,7 @@ const VF = window.VexFlow;
 const width = 800;
 const height = 600;
 const zoom = 2.0;
-const foreground = '#aaa';
+const foreground = '#222';
 const background = '#fff5f0ff'; //'#fff5f0ff'; // '#0000';
 const forceForeground = false;
 
@@ -41,6 +41,7 @@ export async function main() {
     globalThis.VF = VF;
     globalThis.context = vf.context;
     globalThis.vf = vf;
+    globalThis.factory = vf;
     await import(arg);
 
     vf.saveFile('image.png');    
