@@ -328,7 +328,11 @@ class CanvasContext {
     }
     rotate(angle) {
         console.debug(`CanvasContext::rotate`);
-        // nop
+        this.ctx.rotate(angle);
+    }
+    scale(x, y) {
+        console.debug(`CanvasContext::scale ${x}, ${y}`);
+        // No operation
     }
     fill() {
         console.debug(`CanvasContext::fill`);
@@ -367,10 +371,6 @@ class CanvasContext {
     }
     save() {
         console.debug(`CanvasContext::save`);
-        // No operation
-    }
-    scale(x, y) {
-        console.debug(`CanvasContext::scale`);
         // No operation
     }
     stroke() {

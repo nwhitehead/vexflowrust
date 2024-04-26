@@ -135,6 +135,10 @@ impl DrawContext {
         }
     }
 
+    pub fn scale(&mut self, sx: f64, sy: f64) {
+        self.transform = self.transform.post_scale(sx as f32, sy as f32);
+    }
+
     pub fn translate(&mut self, x: f64, y: f64) {
         self.transform = self.transform.post_translate(x as f32, y as f32);
     }
