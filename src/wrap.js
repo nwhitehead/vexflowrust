@@ -285,7 +285,11 @@ class CanvasContext {
     // Wrapped methods
     getTransform() {
         console.debug(`CanvasContext::getTransform`);
-        return 1;
+        return this.ctx.getTransform();
+    }
+    setTransform(t) {
+        console.debug(`CanvasContext::setTransform`);
+        return this.ctx.setTransform(t);
     }
     fillText(txt, x, y) {
         console.log(`fillText this.font=${this.font}`);
@@ -316,7 +320,15 @@ class CanvasContext {
     }
     closePath() {
         console.debug(`CanvasContext::closePath`);
-        // not sure what to do here
+        this.ctx.closePath();
+    }
+    translate(x, y) {
+        console.debug(`CanvasContext::translate`);
+        this.ctx.translate(x, y);
+    }
+    rotate(angle) {
+        console.debug(`CanvasContext::rotate`);
+        // nop
     }
     fill() {
         console.debug(`CanvasContext::fill`);

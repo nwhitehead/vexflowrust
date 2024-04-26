@@ -78,6 +78,8 @@ pub struct DrawContext {
     path: Option<PathBuilder>,
     #[qjs(skip_trace)]
     font_library: FontLibrary,
+    #[qjs(skip_trace)]
+    transform: Transform,
 }
 
 fn blend_color(src: &PremultipliedColorU8, dst: &PremultipliedColorU8) -> PremultipliedColorU8 {
@@ -105,7 +107,40 @@ impl DrawContext {
             font: "".to_string(),
             path: None,
             font_library: FontLibrary::new(),
+            transform: Transform::identity(),
         }
+    }
+
+    #[qjs(rename = "getTransform")]
+    pub fn get_transform(&mut self) -> std::vec::Vec<f64> {
+        return vec![
+            self.transform.sx as f64,
+            self.transform.kx as f64,
+            self.transform.ky as f64,
+            self.transform.sy as f64,
+            self.transform.tx as f64,
+            self.transform.ty as f64,
+        ];
+    }
+
+    #[qjs(rename = "setTransform")]
+    pub fn set_transform(&mut self, t: std::vec::Vec<f64>) {
+        self.transform = Transform {
+            sx: t[0] as f32,
+            kx: t[1] as f32,
+            ky: t[2] as f32,
+            sy: t[3] as f32,
+            tx: t[4] as f32,
+            ty: t[5] as f32,
+        }
+    }
+
+    pub fn translate(&mut self, x: f64, y: f64) {
+        self.transform = self.transform.post_translate(x as f32, y as f32);
+    }
+
+    pub fn rotate(&mut self, angle: f64) {
+        self.transform = self.transform.post_rotate(angle as f32);
     }
 
     #[qjs(rename = "measureText")]
@@ -223,6 +258,14 @@ impl DrawContext {
             .line_to((x * self.zoom) as f32, (y * self.zoom) as f32);
     }
 
+    #[qjs(rename = "closePath")]
+    pub fn close_path(&mut self) {
+        assert!(self.path.is_some());
+        self.path
+            .as_mut()
+            .expect("path must be created")
+            .close();
+    }
     #[qjs(rename = "quadraticCurveTo")]
     pub fn quadratic_curve_to(&mut self, x1: f64, y1: f64, x: f64, y: f64) {
         assert!(self.path.is_some());
@@ -268,7 +311,7 @@ impl DrawContext {
         stroke.width = (width * self.zoom) as f32;
         stroke.line_cap = LineCap::Butt;
         self.surface
-            .stroke_path(&final_path, &paint, &stroke, Transform::identity(), None);
+            .stroke_path(&final_path, &paint, &stroke, self.transform, None);
     }
 
     pub fn fill(&mut self, r: f64, g: f64, b: f64, a: f64) {
@@ -292,7 +335,7 @@ impl DrawContext {
             &final_path,
             &paint,
             FillRule::Winding,
-            Transform::identity(),
+            self.transform,
             None,
         );
     }
