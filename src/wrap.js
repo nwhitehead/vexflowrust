@@ -98,7 +98,21 @@ const qunitAssert = {
             throw new Error(msg);
         }
     },
-    expect(n) {}
+    expect(n) {
+        // This is supposed to count how many asserts there were...
+        // I'm too lazy to do this
+    },
+    throws(func, msg) {
+        let caught = null;
+        try {
+            func();
+        } catch(e) {
+            caught = e;
+        }
+        if (caught === null) {
+            throw new Error(msg);
+        }
+    }
 };
 
 globalThis.QUnit = {
@@ -285,9 +299,11 @@ function measureTextLocal(drawContext, txt, size, italic, bold) {
 
 globalThis.document = {
     getElementById(id) {
-        // Should never get here
-        console.log(`id=${id}`);
-        assert(false, "getElementById called");
+        // Should only get here when testing Factory
+        console.debug(`getElementById id=${id}`);
+        const canvas = new Canvas(500, 400, 1.0, '#fff', '#000', false);
+        return canvas;
+        //assert(false, "getElementById called");
     },
     createElement(t) {
         if (t === 'span') {
