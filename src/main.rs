@@ -252,7 +252,7 @@ impl DrawContext {
                         )
                         .unwrap();
                 });
-                let descaled_transform = self.transform.clone().post_scale((1.0 / total_zoom) as f32, (1.0 / total_zoom) as f32);
+                let descaled_transform = self.transform.clone().post_scale((1.0 / extra_zoom) as f32, (1.0 / extra_zoom) as f32);
                 self.surface.draw_pixmap(
                     x_i + bounds.min.x as i32,
                     y_i + bounds.min.y as i32,
