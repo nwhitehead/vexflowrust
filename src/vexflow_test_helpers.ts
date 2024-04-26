@@ -152,11 +152,6 @@ export class VexFlowTests {
       // Save image
       console.log(`Saving image ${fileName}`);
       console.log(Renderer.lastContext.context2D.actualCanvas.saveFile(fileName));
-
-      // const imageData = (element as HTMLCanvasElement).toDataURL().split(';base64,').pop();
-      // const imageBuffer = Buffer.from(imageData as string, 'base64');
-
-      // VexFlowTests.shims.fs.writeFileSync(fileName, imageBuffer, { encoding: 'base64' });
     }
   }
 
@@ -177,7 +172,7 @@ export class VexFlowTests {
       const titleId = `${prefix}${sanitize(moduleName)}.${sanitize(name)}`;
       const options: TestOptions = { elementId, params, assert, backend };
       const contextBuilder: ContextBuilder = null;
-      testFunc(options, contextBuilder);
+      testFunc(options);
       if (helper) {
         helper();
       }

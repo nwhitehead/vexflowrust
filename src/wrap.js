@@ -1,5 +1,5 @@
 
-globalThis.DEBUG = false;
+globalThis.DEBUG = true;
 
 function anyToString(v) {
     if (v === undefined) {
@@ -413,6 +413,9 @@ class CanvasContext {
     }
     lineTo(x, y) {
         console.debug(`CanvasContext::lineTo ${x}, ${y}`);
+        if (isNaN(x) || isNaN(y)) {
+            throw new Error('Cannot have NAN values in coordinates');
+        }
         this.ctx.lineTo(x + this.offset.x, y + this.offset.y);
     }
     moveTo(x, y) {
