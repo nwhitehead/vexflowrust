@@ -157,6 +157,13 @@ assert_same(parseFont('9pt Academico,"EB Garamond"'), {
 
 /// Parse color text like "#f0f" to { r: 1, g: 0, b: 1 }
 function parseColor(color) {
+    const namedColors = {
+        'none': { r: 0, g: 0, b: 0, a: 0 },
+        'red': { r: 1, g: 0, b: 0, a: 1 },
+    };
+    if (namedColors[color]) {
+        return namedColors[color];
+    }
     const shortHex = color.match(/^#(.)(.)(.)$/);
     if (shortHex) {
         return {
@@ -195,7 +202,8 @@ function parseColor(color) {
     }
     throw new Error(`Could not convert color "${color}"`);
 }
-
+assert_same(parseColor('none'), { r: 0, g: 0, b: 0, a: 0});
+assert_same(parseColor('red'), { r: 1, g: 0, b: 0, a: 1});
 assert_same(parseColor('#000'), { r: 0, g: 0, b: 0, a: 1});
 assert_same(parseColor('#800'), { r: 136/255, g: 0, b: 0, a: 1});
 assert_same(parseColor('#f00'), { r: 1, g: 0, b: 0, a: 1});
@@ -292,13 +300,9 @@ class CanvasContext {
         return this.ctx.setTransform(t);
     }
     fillText(txt, x, y) {
-        console.log(`fillText this.font=${this.font}`);
         const { size, italic } = parseFont(this.font);
-        console.debug(`CanvasContext::fillText txt=${txt} x=${x} y=${y} size=${size}`);
-        const r = this.actualCanvas.foreground.r;
-        const g = this.actualCanvas.foreground.g;
-        const b = this.actualCanvas.foreground.b;
-        const a = this.actualCanvas.foreground.a;
+        console.debug(`CanvasContext::fillText txt=${txt} x=${x} y=${y} size=${size} this.font=${this.font} this.fillStyle=${this.fillStyle}`);
+        const { r, g, b, a } = parseColor(this.fillStyle);
         this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size, italic, r, g, b, a);
     }
     beginPath() {
@@ -335,18 +339,13 @@ class CanvasContext {
         this.ctx.scale(x, y);
     }
     fill() {
-        console.debug(`CanvasContext::fill`);
-        const r = this.actualCanvas.foreground.r;
-        const g = this.actualCanvas.foreground.g;
-        const b = this.actualCanvas.foreground.b;
-        const a = this.actualCanvas.foreground.a;
+        console.debug(`CanvasContext::fill ${this.fillStyle}`);
+        const { r, g, b, a } = parseColor(this.fillStyle);
         this.ctx.fill(r, g, b, a);
     }
     fillRect(x, y, width, height) {
-        console.debug(`CanvasContext::fillRect ${x + this.offset.x}, ${y + this.offset.y}, ${width}, ${height}`);
-        const r = this.actualCanvas.foreground.r;
-        const g = this.actualCanvas.foreground.g;
-        const b = this.actualCanvas.foreground.b;
+        console.debug(`CanvasContext::fillRect ${x + this.offset.x}, ${y + this.offset.y}, ${width}, ${height} fillStyle=${this.fillStyle}`);
+        const { r, g, b, a } = parseColor(this.fillStyle);
         this.ctx.fillRect(x + this.offset.x, y + this.offset.y, width, height, r, g, b);
     }
     clearRect(x, y, width, height) {
@@ -374,7 +373,7 @@ class CanvasContext {
         // No operation
     }
     stroke() {
-        console.debug(`CanvasContext::stroke`);
+        console.debug(`CanvasContext::stroke strokeStyle=${this.strokeStyle} lineWidth=${this.lineWidth}`);
         const r = this.actualCanvas.foreground.r;
         const g = this.actualCanvas.foreground.g;
         const b = this.actualCanvas.foreground.b;

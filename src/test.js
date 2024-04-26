@@ -25,6 +25,7 @@ class HeadlessFactory extends Factory {
         const context = VF.Renderer.buildContext(canvas, 1/*canvas backend*/, width, height, background);
         this.context = context;
         //console.log(context.context2D.constructor);  is CanvasContext
+        context.context2D.fillStyle = '#ff0000';
     }
     saveFile(filename) {
         this.canvas.saveFile(filename);
