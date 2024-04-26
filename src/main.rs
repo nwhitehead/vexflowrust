@@ -82,18 +82,6 @@ pub struct DrawContext {
     transform: Transform,
 }
 
-fn blend_color(src: &PremultipliedColorU8, dst: &PremultipliedColorU8) -> PremultipliedColorU8 {
-    // Blend src onto existing dst color.
-    // Remember that rgb are premultiplied by alpha, makes blend factors 1 and 1-src_alpha
-    let src_a = src.alpha();
-    let inv_src_a: u16 = (255 - src_a) as u16;
-    let r: u8 = src.red() + (((dst.red() as u16 * inv_src_a) as u16 >> 8) & 0xff) as u8;
-    let g: u8 = src.green() + (((dst.green() as u16 * inv_src_a) as u16 >> 8) & 0xff) as u8;
-    let b: u8 = src.blue() + (((dst.blue() as u16 * inv_src_a) as u16 >> 8) & 0xff) as u8;
-    let a: u8 = src.alpha() + (((dst.alpha() as u16 * inv_src_a) as u16 >> 8) & 0xff) as u8;
-    return PremultipliedColorU8::from_rgba(r, g, b, a).unwrap();
-}
-
 #[rquickjs::methods]
 impl DrawContext {
     #[qjs(constructor)]
@@ -140,7 +128,9 @@ impl DrawContext {
     }
 
     pub fn translate(&mut self, x: f64, y: f64) {
-        self.transform = self.transform.post_translate((-x * self.zoom) as f32, (-y * self.zoom) as f32);
+        self.transform = self
+            .transform
+            .post_translate((-x * self.zoom) as f32, (-y * self.zoom) as f32);
     }
 
     pub fn rotate(&mut self, angle: f64) {
