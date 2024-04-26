@@ -77,6 +77,28 @@ ${'\u2550'.repeat(100)}`);
 // Should not need any methods (setTimeout etc.)
 globalThis.window = {};
 
+
+const qunitAssert = {
+    equal(a, b, msg) {
+        if (a !== b) {
+            throw new Error(msg);
+        }
+    }
+};
+
+globalThis.QUnit = {
+    module(msg) {
+        this.module = msg;
+    },
+    test(name, func) {
+        qunitAssert.test = {
+            module: { name },
+        };
+        func(qunitAssert);
+    }
+};
+
+
 /// Parse full fontname like "30pt Bravura,Academico" into:
 ///     { family: ['Bravura', 'Academico'], size: 30 }
 /// This is not full CSS parsing, just enough to get by.

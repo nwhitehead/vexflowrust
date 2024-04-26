@@ -210,9 +210,6 @@ impl DrawContext {
         a: f64,
     ) {
         let mut x_pos = x;
-        let stride = self.surface.width();
-        let width = self.width as i32;
-        let height = self.height as i32;
         for ch in txt.chars() {
             let x_real = (x_pos * self.zoom) as f32;
             let x_i = x_real as i32;
@@ -228,7 +225,6 @@ impl DrawContext {
                 x_frac,
                 y_frac,
             );
-            let pixels = self.surface.pixels_mut();
             let h_advance = scaled_font.h_advance(glyph.id) as f64 / self.zoom;
             if let Some(og) = scaled_font.outline_glyph(glyph) {
                 let bounds = og.px_bounds();
