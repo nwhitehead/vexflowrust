@@ -211,21 +211,26 @@ impl DrawContext {
     ) {
         let mut x_pos = x;
         for ch in txt.chars() {
-            let x_real = (x_pos * self.zoom) as f32;
+            // We can have scale factors in self.transform and self.zoom
+            // If self.transform is also zooming in, need to render more pixels in our glyph pixmap
+            // Do this by scaling before rending glyph, then give de-scaled transform to draw_pixmap.
+            let extra_zoom = f32::max(self.transform.sx.abs(), self.transform.sy.abs());
+            let total_zoom = self.zoom * extra_zoom as f64;
+            let x_real = (x_pos * total_zoom) as f32;
             let x_i = x_real as i32;
             let x_frac = x_real - x_i as f32;
-            let y_real = (y * self.zoom) as f32;
+            let y_real = (y * total_zoom) as f32;
             let y_i = y_real as i32;
             let y_frac = y_real - y_i as f32;
             let (scaled_font, glyph) = self.font_library.lookup_glyph(
                 ch as u32,
-                (size * self.zoom) as f32,
+                (size * total_zoom) as f32,
                 italic,
                 bold,
                 x_frac,
                 y_frac,
             );
-            let h_advance = scaled_font.h_advance(glyph.id) as f64 / self.zoom;
+            let h_advance = scaled_font.h_advance(glyph.id) as f64 / total_zoom;
             if let Some(og) = scaled_font.outline_glyph(glyph) {
                 let bounds = og.px_bounds();
                 let rg_width =
@@ -247,12 +252,13 @@ impl DrawContext {
                         )
                         .unwrap();
                 });
+                let descaled_transform = self.transform.clone().post_scale((1.0 / total_zoom) as f32, (1.0 / total_zoom) as f32);
                 self.surface.draw_pixmap(
                     x_i + bounds.min.x as i32,
                     y_i + bounds.min.y as i32,
                     rendered_glyph.as_ref(),
                     &PixmapPaint::default(),
-                    self.transform,
+                    descaled_transform,
                     None,
                 );
                 x_pos += h_advance;
