@@ -159,6 +159,7 @@ assert_same(parseFont('9pt Academico,"EB Garamond"'), {
 function parseColor(color) {
     const namedColors = {
         'none': { r: 0, g: 0, b: 0, a: 0 },
+        'black': { r: 0, g: 0, b: 0, a: 1 },
         'red': { r: 1, g: 0, b: 0, a: 1 },
     };
     if (namedColors[color]) {
@@ -289,6 +290,20 @@ class CanvasContext {
         this.actualCanvas = canvas;
         // Global offset for subpixel aliasing issues
         this.offset = { x:-0.3/zoom, y:-0.3/zoom };
+        // Stack of saved drawing states to pop back
+        this.stack = [];
+        // Set default values for state
+        this.lineWidth = 1.0;
+        this.fillStyle = "#000";
+        this.strokeStyle = "#000";
+        this.font = "12pt Academico";
+        // this.ctx transform already setup on Rust side to identity
+    }
+    getFillColor() {
+        return parseColor(this.forceFillStyle ? this.forceFillStyle : this.fillStyle);
+    }
+    getStrokeColor() {
+        return parseColor(this.forceStrokeStyle ? this.forceStrokeStyle : this.fillStyle);
     }
     // Wrapped methods
     getTransform() {
@@ -302,7 +317,7 @@ class CanvasContext {
     fillText(txt, x, y) {
         const { size, italic } = parseFont(this.font);
         console.debug(`CanvasContext::fillText txt=${txt} x=${x} y=${y} size=${size} this.font=${this.font} this.fillStyle=${this.fillStyle}`);
-        const { r, g, b, a } = parseColor(this.fillStyle);
+        const { r, g, b, a } = this.getFillColor();
         this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size, italic, r, g, b, a);
     }
     beginPath() {
@@ -340,12 +355,12 @@ class CanvasContext {
     }
     fill() {
         console.debug(`CanvasContext::fill ${this.fillStyle}`);
-        const { r, g, b, a } = parseColor(this.fillStyle);
+        const { r, g, b, a } = this.getFillColor();
         this.ctx.fill(r, g, b, a);
     }
     fillRect(x, y, width, height) {
         console.debug(`CanvasContext::fillRect ${x + this.offset.x}, ${y + this.offset.y}, ${width}, ${height} fillStyle=${this.fillStyle}`);
-        const { r, g, b, a } = parseColor(this.fillStyle);
+        const { r, g, b, a } = this.getFillColor();
         this.ctx.fillRect(x + this.offset.x, y + this.offset.y, width, height, r, g, b);
     }
     clearRect(x, y, width, height) {
@@ -366,24 +381,37 @@ class CanvasContext {
     }
     restore() {
         console.debug(`CanvasContext::restore`);
-        // No operation
+        if (this.stack.length === 0) {
+            console.error('CanvasContext::restore(): Cannot restore drawing state, no saved state in stack.');
+            return;
+        }
+        const state = this.stack.pop();
+        this.font = state.font;
+        this.fillStyle = state.fillStyle;
+        this.strokeStyle = state.strokeStyle;
+        this.lineWidth = state.lineWidth;
+        this.ctx.setTransform(state.transform);
     }
     save() {
         console.debug(`CanvasContext::save`);
-        // No operation
+        const state = {
+            font: this.font,
+            fillStyle: this.fillStyle,
+            strokeStyle: this.strokeStyle,
+            lineWidth: this.lineWidth,
+            transform: this.ctx.getTransform(),
+        };
+        this.stack.push(state);
     }
     stroke() {
         console.debug(`CanvasContext::stroke strokeStyle=${this.strokeStyle} lineWidth=${this.lineWidth}`);
-        const r = this.actualCanvas.foreground.r;
-        const g = this.actualCanvas.foreground.g;
-        const b = this.actualCanvas.foreground.b;
-        const a = this.actualCanvas.foreground.a;
+        const { r, g, b, a } = this.getStrokeColor();;
         this.ctx.stroke(this.lineWidth || 1.0, r, g, b, a);
     }
 }
 
 export class Canvas {
-    constructor(width, height, zoom, background, foreground) {
+    constructor(width, height, zoom, background, foreground, forceForeground) {
         this.width = width;
         this.height = height;
         this.zoom = zoom;
@@ -392,9 +420,18 @@ export class Canvas {
         this.drawContext = new DrawContext(width, height, this.zoom);
         // Set opaque page
         this.drawContext.clear(this.background.r, this.background.g, this.background.b, this.background.a);
+        this.canvasContext = new CanvasContext(this.drawContext, this.zoom, this);
+        // Set default fill and stroke to foreground color
+        this.canvasContext.fillStyle = foreground;
+        this.canvasContext.strokeStyle = foreground;
+        // If requested, force all fill and stroke colors to be foreground
+        if (forceForeground) {
+            this.canvasContext.forceFillStyle = foreground;
+            this.canvasContext.forceStrokeStyle = foreground;    
+        }
     }
     getContext() {
-        return new CanvasContext(this.drawContext, this.zoom, this);
+        return this.canvasContext;
     }
     // Need to have toDataURL for type detection to pass
     toDataURL() {
