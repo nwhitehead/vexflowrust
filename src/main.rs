@@ -32,10 +32,8 @@ impl FontLibrary {
                 include_bytes!("../fonts/AcademicoItalic.otf").to_vec(),
             )
             .unwrap(),
-            bold_font: FontVec::try_from_vec(
-                include_bytes!("../fonts/AcademicoBold.otf").to_vec(),
-            )
-            .unwrap(),
+            bold_font: FontVec::try_from_vec(include_bytes!("../fonts/AcademicoBold.otf").to_vec())
+                .unwrap(),
             bold_italic_font: FontVec::try_from_vec(
                 include_bytes!("../fonts/AcademicoBoldItalic.otf").to_vec(),
             )
@@ -157,10 +155,21 @@ impl DrawContext {
     }
 
     #[qjs(rename = "measureText")]
-    pub fn measure_text(&mut self, txtch: u32, size: f64, italic: bool, bold: bool) -> std::vec::Vec<f64> {
-        let (scaled_font, glyph) =
-            self.font_library
-                .lookup_glyph(txtch, (size * self.zoom) as f32, italic, bold, 0.0, 0.0);
+    pub fn measure_text(
+        &mut self,
+        txtch: u32,
+        size: f64,
+        italic: bool,
+        bold: bool,
+    ) -> std::vec::Vec<f64> {
+        let (scaled_font, glyph) = self.font_library.lookup_glyph(
+            txtch,
+            (size * self.zoom) as f32,
+            italic,
+            bold,
+            0.0,
+            0.0,
+        );
         let ascent = scaled_font.ascent();
         let descent = scaled_font.descent();
         let h_advance = scaled_font.h_advance(glyph.id);
