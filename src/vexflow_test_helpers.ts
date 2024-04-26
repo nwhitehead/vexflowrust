@@ -31,6 +31,11 @@ export class HeadlessFactory extends Factory {
   }
 }
 
+function rustContextBuilder(elementId: string, width: number, height: number, background: string): ContextBuilder {
+  const headlessFactory = new HeadlessFactory({width, height, background});
+  return headlessFactory.context;
+}
+
 // eslint-disable-next-line
 declare const $: any;
 
@@ -175,7 +180,7 @@ export class VexFlowTests {
       const prefix = testTypeLowerCase + '_';
       const titleId = `${prefix}${sanitize(moduleName)}.${sanitize(name)}`;
       const options: TestOptions = { elementId, params, assert, backend };
-      testFunc(options);
+      testFunc(options, rustContextBuilder);
       if (helper) {
         helper();
       }
