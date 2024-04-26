@@ -1,7 +1,7 @@
 import { VexFlowTests } from '../../vexflow/tests/vexflow_test_helpers.js';
 
-// import * as _ from '../../vexflow/tests/index.js';
-import * as _ from '../../vexflow/tests/beam_tests.js';
+import * as _ from '../../vexflow/tests/index.js';
+// import * as _ from '../../vexflow/tests/curve_tests.js';
 
 
 console.log(`Running ${VexFlowTests.tests.length} tests`);
