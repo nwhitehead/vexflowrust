@@ -13,8 +13,10 @@ use tiny_skia::{
 
 pub struct FontLibrary {
     bravura_font: FontVec,
-    default_font: FontVec,
+    regular_font: FontVec,
     italic_font: FontVec,
+    bold_font: FontVec,
+    bold_italic_font: FontVec,
 }
 
 impl FontLibrary {
@@ -22,12 +24,20 @@ impl FontLibrary {
         FontLibrary {
             bravura_font: FontVec::try_from_vec(include_bytes!("../fonts/Bravura.otf").to_vec())
                 .unwrap(),
-            default_font: FontVec::try_from_vec(
+            regular_font: FontVec::try_from_vec(
                 include_bytes!("../fonts/AcademicoRegular.otf").to_vec(),
             )
             .unwrap(),
             italic_font: FontVec::try_from_vec(
                 include_bytes!("../fonts/AcademicoItalic.otf").to_vec(),
+            )
+            .unwrap(),
+            bold_font: FontVec::try_from_vec(
+                include_bytes!("../fonts/AcademicoBold.otf").to_vec(),
+            )
+            .unwrap(),
+            bold_italic_font: FontVec::try_from_vec(
+                include_bytes!("../fonts/AcademicoBoldItalic.otf").to_vec(),
             )
             .unwrap(),
         }
@@ -38,6 +48,7 @@ impl FontLibrary {
         codepoint: u32,
         size: f32,
         italic: bool,
+        bold: bool,
         x: f32,
         y: f32,
     ) -> (PxScaleFont<&FontVec>, Glyph) {
@@ -51,11 +62,19 @@ impl FontLibrary {
         if let Some(_) = chosen_font.outline_glyph(glyph.clone()) {
             return (chosen_font.as_scaled(scale), glyph);
         }
-        // Fallback is default_font
+        // Next try fallbacks based on italic/bold
         let chosen_font = if italic {
-            &self.italic_font
+            if bold {
+                &self.bold_italic_font
+            } else {
+                &self.italic_font
+            }
         } else {
-            &self.default_font
+            if bold {
+                &self.bold_font
+            } else {
+                &self.regular_font
+            }
         };
         let scale = chosen_font.pt_to_px_scale(size).unwrap();
         let glyph2 = chosen_font
@@ -138,10 +157,10 @@ impl DrawContext {
     }
 
     #[qjs(rename = "measureText")]
-    pub fn measure_text(&mut self, txtch: u32, size: f64, italic: bool) -> std::vec::Vec<f64> {
+    pub fn measure_text(&mut self, txtch: u32, size: f64, italic: bool, bold: bool) -> std::vec::Vec<f64> {
         let (scaled_font, glyph) =
             self.font_library
-                .lookup_glyph(txtch, (size * self.zoom) as f32, italic, 0.0, 0.0);
+                .lookup_glyph(txtch, (size * self.zoom) as f32, italic, bold, 0.0, 0.0);
         let ascent = scaled_font.ascent();
         let descent = scaled_font.descent();
         let h_advance = scaled_font.h_advance(glyph.id);
@@ -175,6 +194,7 @@ impl DrawContext {
         y: f64,
         size: f64,
         italic: bool,
+        bold: bool,
         r: f64,
         g: f64,
         b: f64,
@@ -195,6 +215,7 @@ impl DrawContext {
                 ch as u32,
                 (size * self.zoom) as f32,
                 italic,
+                bold,
                 x_frac,
                 y_frac,
             );

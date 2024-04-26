@@ -224,12 +224,12 @@ assert_same(parseColor('#800000'), { r: 128/255, g: 0, b: 0, a: 1});
 assert_same(parseColor('#008000'), { r: 0, g: 128/255, b: 0, a: 1});
 assert_same(parseColor('#000080'), { r: 0, g: 0, b: 128/255, a: 1});
 
-function measureTextLocal(drawContext, txt, size, italic) {
+function measureTextLocal(drawContext, txt, size, italic, bold) {
     let res = {};
     // Make sure txt is nonempty, measure null codepoint if given nothing
     txt = txt || "\0";
     for(let i = 0; i < txt.length; i++) {
-        const metrics = drawContext.measureText(txt.codePointAt(i), size, italic);
+        const metrics = drawContext.measureText(txt.codePointAt(i), size, italic, bold);
         if (i == 0) {
             res = {
                 width: metrics[0],
@@ -273,9 +273,9 @@ globalThis.document = {
                 return {
                     measureText(txt) {
                         console.debug(`TempCanvasContext::measureText`);
-                        const { size, italic } = parseFont(this.font);
+                        const { size, italic, bold } = parseFont(this.font);
                         const c = new DrawContext(1, 1, 1.0);
-                        return measureTextLocal(c, txt, size, italic);
+                        return measureTextLocal(c, txt, size, italic, bold);
                     }
                 };
             }
@@ -319,10 +319,10 @@ class CanvasContext {
         return this.ctx.setTransform(t);
     }
     fillText(txt, x, y) {
-        const { size, italic } = parseFont(this.font);
+        const { size, italic, bold } = parseFont(this.font);
         console.debug(`CanvasContext::fillText txt=${txt} x=${x} y=${y} size=${size} this.font=${this.font} this.fillStyle=${this.fillStyle}`);
         const { r, g, b, a } = this.getFillColor();
-        this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size, italic, r, g, b, a);
+        this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size, italic, bold, r, g, b, a);
     }
     beginPath() {
         console.debug(`CanvasContext::beginPath`);
@@ -338,8 +338,8 @@ class CanvasContext {
     }
     measureText(txt) {
         console.debug(`CanvasContext::measureText`);
-        const { size, italic } = parseFont(this.font);
-        return measureTextLocal(this.ctx, txt, size, italic);
+        const { size, italic, bold } = parseFont(this.font);
+        return measureTextLocal(this.ctx, txt, size, italic, bold);
     }
     closePath() {
         console.debug(`CanvasContext::closePath`);
