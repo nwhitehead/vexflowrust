@@ -358,7 +358,7 @@ impl DrawContext {
             )
             .unwrap(),
             &paint,
-            Transform::identity(),
+            self.transform,
             None,
         );
     }
@@ -395,7 +395,7 @@ impl DrawContext {
             )
             .unwrap(),
             &paint,
-            Transform::identity(),
+            self.transform,
             None,
         );
     }

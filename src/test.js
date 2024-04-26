@@ -8,6 +8,7 @@ const height = 600;
 const zoom = 2.0;
 const foreground = '#222';
 const background = '#fff5f0ff';
+globalThis.devicePixelRatio = 1.0;
 
 const { Factory } = VF;
 

@@ -332,7 +332,7 @@ class CanvasContext {
     }
     scale(x, y) {
         console.debug(`CanvasContext::scale ${x}, ${y}`);
-        // No operation
+        this.ctx.scale(x, y);
     }
     fill() {
         console.debug(`CanvasContext::fill`);
