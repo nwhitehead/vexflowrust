@@ -83,6 +83,11 @@ const qunitAssert = {
         if (a !== b) {
             throw new Error(msg);
         }
+    },
+    ok(a, msg) {
+        if (!a) {
+            throw new Error(msg);
+        }
     }
 };
 
@@ -345,6 +350,14 @@ class CanvasContext {
         console.debug(`CanvasContext::fillText txt=${txt} x=${x} y=${y} size=${size} this.font=${this.font} this.fillStyle=${this.fillStyle}`);
         const { r, g, b, a } = this.getFillColor();
         this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size, italic, bold, r, g, b, a);
+    }
+    arc(x, y, radius, startAngle, endAngle, counterclockwise) {
+        console.debug(`CanvasContext::arc ${x}, ${y} ${startAngle} ${endAngle} ${counterclockwise}`);
+        this.ctx.arc(x + this.offset.x, y + this.offset.y, radius, startAngle, endAngle, counterclockwise);
+    }
+    rect(x, y, width, height) {
+        console.debug(`CanvasContext::rect ${x}, ${y} ${width}, ${height}`);
+        this.ctx.rect(x + this.offset.x, y + this.offset.y, width, height);
     }
     beginPath() {
         console.debug(`CanvasContext::beginPath`);

@@ -292,6 +292,7 @@ impl DrawContext {
         assert!(self.path.is_some());
         self.path.as_mut().expect("path must be created").close();
     }
+
     #[qjs(rename = "quadraticCurveTo")]
     pub fn quadratic_curve_to(&mut self, x1: f64, y1: f64, x: f64, y: f64) {
         assert!(self.path.is_some());
@@ -301,6 +302,20 @@ impl DrawContext {
             (x * self.zoom) as f32,
             (y * self.zoom) as f32,
         );
+    }
+
+    pub fn arc(&mut self, x: f64, y: f64, radius: f64, start_angle: f64, end_angle: f64, _counterclockwise: bool) {
+        assert!(self.path.is_some());
+        if start_angle == 0.0 && (end_angle - std::f64::consts::TAU).abs() < 1e-10 {
+            self.path.as_mut().expect("path must be created").push_circle(x as f32, y as f32, radius as f32);
+        } else {
+            println!("Non circle arc encountered, ignoring");
+        }
+    }
+
+    pub fn rect(&mut self, x: f64, y: f64, width: f64, height: f64) {
+        assert!(self.path.is_some());
+        self.path.as_mut().expect("path must be created").push_rect(Rect::from_xywh(x as f32, y as f32, width as f32, height as f32).unwrap());
     }
 
     #[qjs(rename = "bezierCurveTo")]
@@ -477,7 +492,7 @@ fn main() {
         Class::<DrawContext>::define(&global).unwrap();
         register_function(ctx.clone(), "print", print);
         match ctx.eval_file_with_options::<(), _>(
-            "src/test.js",
+            "src/unittest.js",
             EvalOptions {
                 global: false,
                 strict: true,
