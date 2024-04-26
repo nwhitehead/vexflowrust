@@ -279,8 +279,6 @@ class CanvasContext {
         // Need canvas field to hold final computed scaled width and height
         this.canvas = { width:0, height: 0 };
         this.actualCanvas = canvas;
-        // Whether we are drawing a path
-        this.inPath = false;
         // Global offset for subpixel aliasing issues
         this.offset = { x:-0.3/zoom, y:-0.3/zoom };
     }
@@ -301,19 +299,14 @@ class CanvasContext {
     }
     beginPath() {
         console.debug(`CanvasContext::beginPath`);
-        assert(this.inPath === false);
-        this.inPath = true;
         this.ctx.beginPath();
     }
     bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y) {
         console.debug(`CanvasContext::bezierCurveTo`);
-        console.error('bezierCurveTo not implemented yet');
-        assert(this.inPath);
-        this.ctx.moveTo(x + this.offset.x, y + this.offset.y);
+        this.ctx.bezierCurveTo(cp1x + this.offset.x, cp1y + this.offset.y, cp2x + this.offset.x, cp2y + this.offset.y, x + this.offset.x, y + this.offset.y);
     }
     quadraticCurveTo(cpx, cpy, x, y) {
         console.debug(`CanvasContext::quadraticCurveTo`);
-        assert(this.inPath);
         this.ctx.quadraticCurveTo(cpx + this.offset.x, cpy + this.offset.y, x + this.offset.x, y + this.offset.y);
     }
     measureText(txt) {
@@ -327,8 +320,6 @@ class CanvasContext {
     }
     fill() {
         console.debug(`CanvasContext::fill`);
-        assert(this.inPath === true);
-        this.inPath = false;
         const r = this.actualCanvas.foreground.r;
         const g = this.actualCanvas.foreground.g;
         const b = this.actualCanvas.foreground.b;
@@ -352,12 +343,10 @@ class CanvasContext {
     }
     lineTo(x, y) {
         console.debug(`CanvasContext::lineTo`);
-        assert(this.inPath);
         this.ctx.lineTo(x + this.offset.x, y + this.offset.y);
     }
     moveTo(x, y) {
         console.debug(`CanvasContext::moveTo`);
-        assert(this.inPath);
         this.ctx.moveTo(x + this.offset.x, y + this.offset.y);
     }
     restore() {
@@ -374,8 +363,6 @@ class CanvasContext {
     }
     stroke() {
         console.debug(`CanvasContext::stroke`);
-        assert(this.inPath === true);
-        this.inPath = false;
         const r = this.actualCanvas.foreground.r;
         const g = this.actualCanvas.foreground.g;
         const b = this.actualCanvas.foreground.b;

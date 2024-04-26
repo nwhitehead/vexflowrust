@@ -74,7 +74,6 @@ pub struct DrawContext {
     #[qjs(skip_trace)]
     surface: Pixmap,
     font: String,
-    in_path: bool,
     #[qjs(skip_trace)]
     path: Option<PathBuilder>,
     #[qjs(skip_trace)]
@@ -104,7 +103,6 @@ impl DrawContext {
             surface: Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
                 .unwrap(),
             font: "".to_string(),
-            in_path: false,
             path: None,
             font_library: FontLibrary::new(),
         }
@@ -204,14 +202,11 @@ impl DrawContext {
 
     #[qjs(rename = "beginPath")]
     pub fn begin_path(&mut self) {
-        assert!(!self.in_path);
-        self.in_path = true;
         self.path = Some(PathBuilder::new());
     }
 
     #[qjs(rename = "moveTo")]
     pub fn move_to(&mut self, x: f64, y: f64) {
-        assert!(self.in_path);
         assert!(self.path.is_some());
         self.path
             .as_mut()
@@ -221,7 +216,6 @@ impl DrawContext {
 
     #[qjs(rename = "lineTo")]
     pub fn line_to(&mut self, x: f64, y: f64) {
-        assert!(self.in_path);
         assert!(self.path.is_some());
         self.path
             .as_mut()
@@ -231,7 +225,6 @@ impl DrawContext {
 
     #[qjs(rename = "quadraticCurveTo")]
     pub fn quadratic_curve_to(&mut self, x1: f64, y1: f64, x: f64, y: f64) {
-        assert!(self.in_path);
         assert!(self.path.is_some());
         self.path.as_mut().expect("path must be created").quad_to(
             (x1 * self.zoom) as f32,
@@ -241,11 +234,21 @@ impl DrawContext {
         );
     }
 
-    pub fn stroke(&mut self, width: f64, r: f64, g: f64, b: f64, a: f64) {
-        assert!(self.in_path);
+    #[qjs(rename = "bezierCurveTo")]
+    pub fn bezier_curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) {
         assert!(self.path.is_some());
-        self.in_path = false;
-        // FIXME: I'm cloning the path, then removing it. How do I take ownership and drop it?
+        self.path.as_mut().expect("path must be created").cubic_to(
+            (x1 * self.zoom) as f32,
+            (y1 * self.zoom) as f32,
+            (x2 * self.zoom) as f32,
+            (y2 * self.zoom) as f32,
+            (x * self.zoom) as f32,
+            (y * self.zoom) as f32,
+        );
+    }
+
+    pub fn stroke(&mut self, width: f64, r: f64, g: f64, b: f64, a: f64) {
+        assert!(self.path.is_some());
         let final_path = self
             .path
             .as_mut()
@@ -253,7 +256,6 @@ impl DrawContext {
             .clone()
             .finish()
             .unwrap();
-        self.path = None;
         let mut paint = Paint::default();
         paint.set_color_rgba8(
             (r * 255.0) as u8,
@@ -270,10 +272,7 @@ impl DrawContext {
     }
 
     pub fn fill(&mut self, r: f64, g: f64, b: f64, a: f64) {
-        assert!(self.in_path);
         assert!(self.path.is_some());
-        self.in_path = false;
-        // FIXME: I'm cloning the path, then removing it. How do I take ownership and drop it?
         let final_path = self
             .path
             .as_mut()
@@ -281,7 +280,6 @@ impl DrawContext {
             .clone()
             .finish()
             .unwrap();
-        self.path = None;
         let mut paint = Paint::default();
         paint.set_color_rgba8(
             (r * 255.0) as u8,
