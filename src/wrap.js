@@ -88,7 +88,8 @@ const qunitAssert = {
         if (!a) {
             throw new Error(msg);
         }
-    }
+    },
+    expect(n) {}
 };
 
 globalThis.QUnit = {
