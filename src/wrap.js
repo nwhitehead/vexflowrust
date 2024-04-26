@@ -81,6 +81,15 @@ globalThis.window = {};
 const qunitAssert = {
     equal(a, b, msg) {
         if (a !== b) {
+            // For some reason an array of one element is considered the same as the other element...
+            // Used by easyscore_tests.js
+            if (Array.isArray(a) && a.length === 1) {
+                a = a[0];
+                if (a === b) {
+                    return;
+                }
+            }
+            console.error(`Unequal: ${a} !== ${b}`);
             throw new Error(msg);
         }
     },
