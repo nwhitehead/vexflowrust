@@ -6,9 +6,9 @@ const VF = window.VexFlow;
 const width = 800;
 const height = 600;
 const zoom = 2.0;
-const foreground = '#2a2';
+const foreground = '#aaa';
 const background = '#fff5f0ff'; //'#fff5f0ff'; // '#0000';
-const forceForeground = true;
+const forceForeground = false;
 
 const { Factory } = VF;
 

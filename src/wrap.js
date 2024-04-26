@@ -155,12 +155,16 @@ assert_same(parseFont('9pt Academico,"EB Garamond"'), {
     italic: false,
 });
 
-/// Parse color text like "#f0f" to { r: 1, g: 0, b: 1 }
+/// Parse color text like "#f0f" to { r: 1, g: 0, b: 1, a: 1 }
 function parseColor(color) {
     const namedColors = {
         'none': { r: 0, g: 0, b: 0, a: 0 },
+        'transparent': { r: 0, g: 0, b: 0, a: 0 },
         'black': { r: 0, g: 0, b: 0, a: 1 },
+        'white': { r: 1, g: 1, b: 1, a: 1 },
         'red': { r: 1, g: 0, b: 0, a: 1 },
+        'green': { r: 0, g: 1, b: 0, a: 1 },
+        'blue': { r: 0, g: 0, b: 1, a: 1 },
     };
     if (namedColors[color]) {
         return namedColors[color];
@@ -300,10 +304,10 @@ class CanvasContext {
         // this.ctx transform already setup on Rust side to identity
     }
     getFillColor() {
-        return parseColor(this.forceFillStyle ? this.forceFillStyle : this.fillStyle);
+        return this.forceFillStyle ? this.forceFillStyle : parseColor(this.fillStyle);
     }
     getStrokeColor() {
-        return parseColor(this.forceStrokeStyle ? this.forceStrokeStyle : this.fillStyle);
+        return this.forceStrokeStyle ? this.forceStrokeStyle : parseColor(this.fillStyle);
     }
     // Wrapped methods
     getTransform() {
@@ -426,8 +430,9 @@ export class Canvas {
         this.canvasContext.strokeStyle = foreground;
         // If requested, force all fill and stroke colors to be foreground
         if (forceForeground) {
-            this.canvasContext.forceFillStyle = foreground;
-            this.canvasContext.forceStrokeStyle = foreground;    
+            // pre-parse color so we don't have to do it for every draw, it's not changing
+            this.canvasContext.forceFillStyle = parseColor(foreground);
+            this.canvasContext.forceStrokeStyle = parseColor(foreground);
         }
     }
     getContext() {
