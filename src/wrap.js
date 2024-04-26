@@ -1,5 +1,5 @@
 
-globalThis.DEBUG = true;
+globalThis.DEBUG = false;
 
 function anyToString(v) {
     if (v === undefined) {

@@ -14,10 +14,10 @@ console.log('Hello from vexflow_test_helpers.ts');
 
 export class HeadlessFactory extends Factory {
   constructor(options) {
-      super({ renderer: { elementId: null } });
       const opts = options || {};
       const width = opts.width || 500;
       const height = opts.height || 200;
+      super({ renderer: { elementId: null, width, height } });
       const zoom = opts.zoom || 1.0;
       const background = opts.background || '#fff5f0ff';
       const foreground = opts.foreground || '#111';
@@ -151,7 +151,7 @@ export class VexFlowTests {
         '.png';
       // Save image
       console.log(`Saving image ${fileName}`);
-      console.log(Renderer.lastContext.context2D.actualCanvas.saveFile(fileName));
+      Renderer.lastContext.context2D.actualCanvas.saveFile(fileName);
     }
   }
 
@@ -171,7 +171,6 @@ export class VexFlowTests {
       const prefix = testTypeLowerCase + '_';
       const titleId = `${prefix}${sanitize(moduleName)}.${sanitize(name)}`;
       const options: TestOptions = { elementId, params, assert, backend };
-      const contextBuilder: ContextBuilder = null;
       testFunc(options);
       if (helper) {
         helper();

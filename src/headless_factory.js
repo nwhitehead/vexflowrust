@@ -8,10 +8,10 @@ const { Factory } = VF;
 
 export class HeadlessFactory extends Factory {
     constructor(options) {
-        super({ renderer: { elementId: null } });
-        const opts = options || {};
         const width = opts.width || 500;
         const height = opts.height || 200;
+        super({ renderer: { elementId: null, width, height } });
+        const opts = options || {};
         const zoom = opts.zoom || 1.0;
         const background = opts.background || '#fff5f0ff';
         const foreground = opts.foreground || '#111';
