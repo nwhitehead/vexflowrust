@@ -323,11 +323,11 @@ class CanvasContext {
         this.ctx.closePath();
     }
     translate(x, y) {
-        console.debug(`CanvasContext::translate`);
+        console.debug(`CanvasContext::translate ${x}, ${y}`);
         this.ctx.translate(x, y);
     }
     rotate(angle) {
-        console.debug(`CanvasContext::rotate`);
+        console.debug(`CanvasContext::rotate ${angle}`);
         this.ctx.rotate(angle);
     }
     scale(x, y) {

@@ -140,11 +140,11 @@ impl DrawContext {
     }
 
     pub fn translate(&mut self, x: f64, y: f64) {
-        self.transform = self.transform.post_translate(x as f32, y as f32);
+        self.transform = self.transform.post_translate((-x * self.zoom) as f32, (-y * self.zoom) as f32);
     }
 
     pub fn rotate(&mut self, angle: f64) {
-        self.transform = self.transform.post_rotate(angle as f32);
+        self.transform = self.transform.post_rotate(angle.to_degrees() as f32);
     }
 
     #[qjs(rename = "measureText")]
@@ -236,7 +236,7 @@ impl DrawContext {
                     y_i + bounds.min.y as i32,
                     rendered_glyph.as_ref(),
                     &PixmapPaint::default(),
-                    Transform::identity(),
+                    self.transform,
                     None,
                 );
                 x_pos += h_advance;

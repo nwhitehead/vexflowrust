@@ -7,8 +7,7 @@ const width = 800;
 const height = 600;
 const zoom = 2.0;
 const foreground = '#222';
-const background = '#fff5f0ff';
-globalThis.devicePixelRatio = 1.0;
+const background = '#fff5f0ff'; //'#fff5f0ff'; // '#0000';
 
 const { Factory } = VF;
 
@@ -25,6 +24,7 @@ class HeadlessFactory extends Factory {
         this.canvas = canvas;
         const context = VF.Renderer.buildContext(canvas, 1/*canvas backend*/, width, height, background);
         this.context = context;
+        //console.log(context.context2D.constructor);  is CanvasContext
     }
     saveFile(filename) {
         this.canvas.saveFile(filename);
