@@ -262,6 +262,8 @@ function parseColor(color) {
         'tomato': '#ff6347',
         'lawngreen': '#7cfc00',
         'orange': '#ffa500',
+        'brown': '#a52a2a',
+        'lightgreen': '#90ee90',
     };
     if (namedColors[color]) {
         return parseColor(namedColors[color]);
