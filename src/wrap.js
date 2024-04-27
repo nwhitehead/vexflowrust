@@ -366,12 +366,6 @@ class CanvasContext {
         this.font = "12pt Academico";
         // this.ctx transform already setup on Rust side to identity
     }
-    getFillColor() {
-        return this.forceFillStyle ? this.forceFillStyle : parseColor(this.fillStyle);
-    }
-    getStrokeColor() {
-        return this.forceStrokeStyle ? this.forceStrokeStyle : parseColor(this.fillStyle);
-    }
     // Wrapped methods
     getTransform() {
         console.debug(`CanvasContext::getTransform`);
@@ -444,9 +438,6 @@ class CanvasContext {
     }
     lineTo(x, y) {
         console.debug(`CanvasContext::lineTo ${x}, ${y}`);
-        if (isNaN(x) || isNaN(y)) {
-            throw new Error('Cannot have NAN values in coordinates');
-        }
         this.ctx.lineTo(x + this.offset.x, y + this.offset.y);
     }
     moveTo(x, y) {
@@ -480,7 +471,8 @@ class CanvasContext {
     stroke() {
         console.debug(`CanvasContext::stroke strokeStyle=${this.strokeStyle} lineWidth=${this.lineWidth}`);
         this.ctx.strokeStyle = this.strokeStyle;
-        this.ctx.stroke(this.lineWidth || 1.0);
+        this.ctx.lineWidth = this.lineWidth;
+        this.ctx.stroke();
     }
     setLineDash(dash) {
         console.debug(`CanvasContext::setLineDash ${dash} strokeStyle=${this.strokeStyle} lineWidth=${this.lineWidth}`);

@@ -171,9 +171,6 @@ pub struct DrawContext {
     /// Drawing state
     #[qjs(skip_trace)]
     draw_state: DrawState,
-    /// Transform
-    #[qjs(skip_trace)]
-    transform: Transform,
 }
 
 static NAMED_COLORS: phf::Map<&'static str, &'static str> = phf_map! {
@@ -335,7 +332,6 @@ impl DrawContext {
                 font_italic: false,
                 transform: Transform::identity(),
             },
-            transform: Transform::identity(),
         }
     }
 
@@ -363,6 +359,16 @@ impl DrawContext {
         return unparse_color(&self.draw_state.stroke_style);
     }
 
+    #[qjs(set, rename = "lineWidth")]
+    pub fn set_line_width(&mut self, width: f64) {
+        self.draw_state.line_width = width;
+    }
+
+    #[qjs(get, rename = "lineWidth")]
+    pub fn get_line_width(&self) -> f64 {
+        return self.draw_state.line_width;
+    }
+
     /// Get the current graphical transform.
     ///
     /// Format is vector: [sx, kx, ky, sy, tx, ty]
@@ -374,12 +380,12 @@ impl DrawContext {
     ///
     pub fn get_transform(&mut self) -> std::vec::Vec<f64> {
         return vec![
-            self.transform.sx as f64,
-            self.transform.kx as f64,
-            self.transform.ky as f64,
-            self.transform.sy as f64,
-            self.transform.tx as f64,
-            self.transform.ty as f64,
+            self.draw_state.transform.sx as f64,
+            self.draw_state.transform.kx as f64,
+            self.draw_state.transform.ky as f64,
+            self.draw_state.transform.sy as f64,
+            self.draw_state.transform.tx as f64,
+            self.draw_state.transform.ty as f64,
         ];
     }
 
@@ -387,7 +393,7 @@ impl DrawContext {
     ///
     /// Format is vector: [sx, kx, ky, sy, tx, ty]
     pub fn set_transform(&mut self, t: std::vec::Vec<f64>) {
-        self.transform = Transform {
+        self.draw_state.transform = Transform {
             sx: t[0] as f32,
             kx: t[1] as f32,
             ky: t[2] as f32,
@@ -399,20 +405,20 @@ impl DrawContext {
 
     /// Apply a scale to the current transformation
     pub fn scale(&mut self, sx: f64, sy: f64) {
-        self.transform = self.transform.post_scale(sx as f32, sy as f32);
+        self.draw_state.transform = self.draw_state.transform.post_scale(sx as f32, sy as f32);
     }
 
     /// Add a translation to the current transformation
     pub fn translate(&mut self, x: f64, y: f64) {
-        self.transform = self
-            .transform
+        self.draw_state.transform = self
+            .draw_state.transform
             .post_translate((-x * self.zoom) as f32, (-y * self.zoom) as f32);
     }
 
     /// Add a rotation to the current transformation
     /// Angle is specified in radians.
     pub fn rotate(&mut self, angle: f64) {
-        self.transform = self.transform.post_rotate(angle.to_degrees() as f32);
+        self.draw_state.transform = self.draw_state.transform.post_rotate(angle.to_degrees() as f32);
     }
 
     /// Measure a single glyph from a codepoint.
@@ -547,7 +553,7 @@ impl DrawContext {
                 }
             });
             let descaled_transform = self
-                .transform
+                .draw_state.transform
                 .clone()
                 .post_scale((1.0 / extra_zoom) as f32, (1.0 / extra_zoom) as f32);
             self.surface.draw_pixmap(
@@ -574,7 +580,7 @@ impl DrawContext {
     ) {
         let mut x_pos = x;
         // Compute extra_zoom as max of scale factors. Should look good in every situation I think.
-        let extra_zoom = f32::max(self.transform.sx.abs(), self.transform.sy.abs());
+        let extra_zoom = f32::max(self.draw_state.transform.sx.abs(), self.draw_state.transform.sy.abs());
         for ch in txt.chars() {
             let h_advance = self.fill_char(
                 ch as u32,
@@ -677,7 +683,7 @@ impl DrawContext {
         );
     }
 
-    pub fn stroke(&mut self, width: f64) {
+    pub fn stroke(&mut self) {
         assert!(self.path.is_some());
         let final_path = self
             .path
@@ -690,10 +696,10 @@ impl DrawContext {
         paint.set_color(self.draw_state.stroke_style);
         paint.anti_alias = true;
         let mut stroke = Stroke::default();
-        stroke.width = (width * self.zoom) as f32;
+        stroke.width = (self.draw_state.line_width * self.zoom) as f32;
         stroke.line_cap = LineCap::Butt;
         self.surface
-            .stroke_path(&final_path, &paint, &stroke, self.transform, None);
+            .stroke_path(&final_path, &paint, &stroke, self.draw_state.transform, None);
     }
 
     pub fn fill(&mut self) {
@@ -718,7 +724,7 @@ impl DrawContext {
         );
         paint.anti_alias = true;
         self.surface
-            .fill_path(&final_path, &paint, FillRule::Winding, self.transform, None);
+            .fill_path(&final_path, &paint, FillRule::Winding, self.draw_state.transform, None);
     }
 
     /// Draw filled rectangle over image
@@ -743,7 +749,7 @@ impl DrawContext {
                 height * self.zoom,
             ),
             &paint,
-            self.transform,
+            self.draw_state.transform,
             None,
         );
     }
@@ -770,7 +776,7 @@ impl DrawContext {
             )
             .unwrap(),
             &paint,
-            self.transform,
+            self.draw_state.transform,
             None,
         );
     }
