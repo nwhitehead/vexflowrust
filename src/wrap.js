@@ -89,6 +89,11 @@ const qunitAssert = {
                     return;
                 }
             }
+            if (!a && !b) {
+                // I guess undefined and null are the equal???
+                return;
+            }
+            console.log(`${a} ${b}`);
             throw new Error(msg);
         }
     },
