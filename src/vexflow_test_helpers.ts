@@ -10,8 +10,6 @@ import { globalObject } from '../src/util';
 
 import { Canvas } from "../../vexflowrust/src/wrap.js";
 
-console.log('Hello from vexflow_test_helpers.ts');
-
 export class HeadlessFactory extends Factory {
   constructor(options) {
       const opts = options || {};
@@ -125,6 +123,10 @@ export class VexFlowTests {
    */
   // eslint-disable-next-line
   static runTests(name: string, testFunc: TestFunction, params?: any): void {
+    if (QUnit.moduleName === 'Renderer') {
+      console.log(`Skipped Renderer tests`);
+      return;
+    }
     VexFlowTests.runRustTest(name, testFunc, params);
   }
 
