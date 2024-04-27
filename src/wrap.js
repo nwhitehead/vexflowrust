@@ -312,15 +312,9 @@ function measureTextLocal(drawContext, txt, size, italic, bold) {
     for(let i = 0; i < txt.length; i++) {
         const metrics = drawContext.measureText(txt.codePointAt(i), size, italic, bold);
         if (i == 0) {
-            res = {
-                width: metrics[0],
-                fontBoundingBoxAscent: metrics[1],
-                fontBoundingBoxDescent: metrics[2],
-                actualBoundingBoxAscent: metrics[3],
-                actualBoundingBoxDescent: metrics[4],
-            };
+            res = metrics;
         } else {
-            res.width += metrics[0];
+            res.width += metrics.width;
         }
     }
     return res;

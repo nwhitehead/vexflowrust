@@ -103,6 +103,21 @@ impl FontLibrary {
     }
 }
 
+#[derive(Trace)]
+#[rquickjs::class(rename_all = "camelCase")]
+pub struct FontMetrics {
+    #[qjs(get, set)]
+    width: f64,
+    #[qjs(get, set)]
+    font_bounding_box_ascent: f64,
+    #[qjs(get, set)]
+    font_bounding_box_descent: f64,
+    #[qjs(get, set)]
+    actual_bounding_box_ascent: f64,
+    #[qjs(get, set)]
+    actual_bounding_box_descent: f64,
+}
+
 /// A drawing context exposed to JS for rendering.
 ///
 /// Owns its own surface with pixel data.
@@ -208,14 +223,14 @@ impl DrawContext {
 
     /// Measure a single glyph from a codepoint.
     ///
-    /// Return value is [ h_advance, ascent, descent, glyph_top, glyph_bottom ]
+    /// Return value is scaled to screen pixel units.
     pub fn measure_text(
         &mut self,
         codepoint: u32,
         size: f64,
         italic: bool,
         bold: bool,
-    ) -> std::vec::Vec<f64> {
+    ) -> FontMetrics {
         let (scaled_font, glyph) = self.font_library.lookup_glyph(
             codepoint,
             (size * self.zoom) as f32,
@@ -230,23 +245,23 @@ impl DrawContext {
         // If it has a path, get bounds.
         if let Some(g) = scaled_font.outline_glyph(glyph) {
             let bounds = g.px_bounds();
-            return vec![
-                h_advance as f64,
-                -ascent as f64,
-                descent as f64,
-                -bounds.min.y as f64,
-                bounds.max.y as f64,
-            ];
+            return FontMetrics {
+                width: h_advance as f64,
+                font_bounding_box_ascent: -ascent as f64,
+                font_bounding_box_descent: descent as f64,
+                actual_bounding_box_ascent: -bounds.min.y as f64,
+                actual_bounding_box_descent: bounds.max.y as f64,
+            };
         }
         // No path, return what we can from font info.
-        return vec![
-            h_advance as f64,
-            -ascent as f64,
-            descent as f64,
-            0.0,
-            0.0,
-        ];
-    }
+        return FontMetrics {
+            width: h_advance as f64,
+            font_bounding_box_ascent: -ascent as f64,
+            font_bounding_box_descent: descent as f64,
+            actual_bounding_box_ascent: 0.0,
+            actual_bounding_box_descent: 0.0,
+        };
+}
 
     // #[qjs(rename = "measureString")]
     // pub fn measure_string(
