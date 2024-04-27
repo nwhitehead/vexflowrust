@@ -263,8 +263,28 @@ function parseColor(color) {
             a: parseInt(longHexA[4], 16) / 255.0,
         }
     }
+    const rgba = color.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),(\d*(\.\d+)?)\)$/);
+    if (rgba) {
+        return {
+            r: parseInt(rgba[1]) / 255.0,
+            g: parseInt(rgba[2]) / 255.0,
+            b: parseInt(rgba[3]) / 255.0,
+            a: Number(rgba[4]),
+        }
+    }
+    const rgb = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    if (rgb) {
+        return {
+            r: parseInt(rgb[1]) / 255.0,
+            g: parseInt(rgb[2]) / 255.0,
+            b: parseInt(rgb[3]) / 255.0,
+            a: 1,
+        }
+    }
     throw new Error(`Could not convert color "${color}"`);
 }
+assert_same(parseColor('rgb(100,200,100)'), { r: 100/255, g: 200/255, b: 100/255, a: 1.0 });
+assert_same(parseColor('rgba(100,200,100,0.4)'), { r: 100/255, g: 200/255, b: 100/255, a: 0.4 });
 assert_same(parseColor('none'), { r: 0, g: 0, b: 0, a: 0});
 assert_same(parseColor('red'), { r: 1, g: 0, b: 0, a: 1});
 assert_same(parseColor('#000'), { r: 0, g: 0, b: 0, a: 1});
