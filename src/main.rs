@@ -129,7 +129,7 @@ pub struct DrawContext {
     transform: Transform,
 }
 
-#[rquickjs::methods]
+#[rquickjs::methods(rename_all = "camelCase")]
 impl DrawContext {
     /// Create new image with zoom factor.
     ///
@@ -163,7 +163,6 @@ impl DrawContext {
     ///     sx ky tx
     ///     kx sy ty
     ///
-    #[qjs(rename = "getTransform")]
     pub fn get_transform(&mut self) -> std::vec::Vec<f64> {
         return vec![
             self.transform.sx as f64,
@@ -178,7 +177,6 @@ impl DrawContext {
     /// Set the current graphical transform.
     ///
     /// Format is vector: [sx, kx, ky, sy, tx, ty]
-    #[qjs(rename = "setTransform")]
     pub fn set_transform(&mut self, t: std::vec::Vec<f64>) {
         self.transform = Transform {
             sx: t[0] as f32,
@@ -211,7 +209,6 @@ impl DrawContext {
     /// Measure a single glyph from a codepoint.
     ///
     /// Return value is [ h_advance, ascent, descent, glyph_top, glyph_bottom ]
-    #[qjs(rename = "measureText")]
     pub fn measure_text(
         &mut self,
         codepoint: u32,
@@ -359,7 +356,6 @@ impl DrawContext {
     }
 
     /// Draw text string at fixed position with given color.
-    #[qjs(rename = "fillText")]
     pub fn fill_text(
         &mut self,
         txt: String,
@@ -406,12 +402,10 @@ impl DrawContext {
         self.surface.save_png(filename).unwrap();
     }
 
-    #[qjs(rename = "beginPath")]
     pub fn begin_path(&mut self) {
         self.path = Some(PathBuilder::new());
     }
 
-    #[qjs(rename = "moveTo")]
     pub fn move_to(&mut self, x: f64, y: f64) {
         assert!(self.path.is_some());
         self.path
@@ -420,7 +414,6 @@ impl DrawContext {
             .move_to((x * self.zoom) as f32, (y * self.zoom) as f32);
     }
 
-    #[qjs(rename = "lineTo")]
     pub fn line_to(&mut self, x: f64, y: f64) {
         assert!(self.path.is_some());
         self.path
@@ -429,13 +422,11 @@ impl DrawContext {
             .line_to((x * self.zoom) as f32, (y * self.zoom) as f32);
     }
 
-    #[qjs(rename = "closePath")]
     pub fn close_path(&mut self) {
         assert!(self.path.is_some());
         self.path.as_mut().expect("path must be created").close();
     }
 
-    #[qjs(rename = "quadraticCurveTo")]
     pub fn quadratic_curve_to(&mut self, x1: f64, y1: f64, x: f64, y: f64) {
         assert!(self.path.is_some());
         self.path.as_mut().expect("path must be created").quad_to(
@@ -475,7 +466,6 @@ impl DrawContext {
             .push_rect(Rect::from_xywh(x as f32, y as f32, width as f32, height as f32).unwrap());
     }
 
-    #[qjs(rename = "bezierCurveTo")]
     pub fn bezier_curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) {
         assert!(self.path.is_some());
         self.path.as_mut().expect("path must be created").cubic_to(
@@ -534,7 +524,6 @@ impl DrawContext {
     }
 
     /// Draw filled rectangle over image
-    #[qjs(rename = "fillRect")]
     pub fn fill_rect(&mut self, x: f64, y: f64, width: f64, height: f64, r: f64, g: f64, b: f64) {
         let mut paint = Paint::default();
         paint.set_color_rgba8((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8, 255);
@@ -555,7 +544,6 @@ impl DrawContext {
 
     /// Set surface to color given, including alpha.
     /// So this can erase canvas, or set to background color.
-    #[qjs(rename = "clearRect")]
     pub fn clear_rect(
         &mut self,
         x: f64,
