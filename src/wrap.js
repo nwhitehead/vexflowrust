@@ -250,16 +250,21 @@ assert_same(parseFont('9pt Academico,"EB Garamond"'), {
 /// Parse color text like "#f0f" to { r: 1, g: 0, b: 1, a: 1 }
 function parseColor(color) {
     const namedColors = {
-        'none': { r: 0, g: 0, b: 0, a: 0 },
-        'transparent': { r: 0, g: 0, b: 0, a: 0 },
-        'black': { r: 0, g: 0, b: 0, a: 1 },
-        'white': { r: 1, g: 1, b: 1, a: 1 },
-        'red': { r: 1, g: 0, b: 0, a: 1 },
-        'green': { r: 0, g: 1, b: 0, a: 1 },
-        'blue': { r: 0, g: 0, b: 1, a: 1 },
+        'none': '#0000',
+        'transparent': '#0000',
+        'black': '#000',
+        'white': '#fff',
+        'red': '#f00',
+        'green': '#0f0',
+        'blue': '#00f',
+        'purple': '#800080',
+        'darkturquoise': '#00ced1',
+        'tomato': '#ff6347',
+        'lawngreen': '#7cfc00',
+        'orange': '#ffa500',
     };
     if (namedColors[color]) {
-        return namedColors[color];
+        return parseColor(namedColors[color]);
     }
     const shortHex = color.match(/^#(.)(.)(.)$/);
     if (shortHex) {

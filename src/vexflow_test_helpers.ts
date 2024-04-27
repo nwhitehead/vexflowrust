@@ -144,6 +144,8 @@ export class VexFlowTests {
     VexFlowTests.runWithParams({ testType: 'RustBackend', name, testFunc, params, helper });
   }
 
+  static runSVGTest(): void {};
+
   /**
    * Save the PNG file.
    * @param fontName

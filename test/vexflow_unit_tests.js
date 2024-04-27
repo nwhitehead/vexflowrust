@@ -1,7 +1,7 @@
 import { VexFlowTests } from '../../vexflow/tests/vexflow_test_helpers.js';
 
 import * as _ from '../../vexflow/tests/index.js';
-//import * as _ from '../../vexflow/tests/renderer_tests.js';
+//import * as _ from '../../vexflow/tests/stavenote_tests.js';
 //import * as __ from '../../vexflow/tests/accidental_tests.js';
 
 
