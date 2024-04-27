@@ -284,6 +284,20 @@ mod tests {
     }
 }
 
+fn normalized_rect(x: f64, y: f64, width: f64, height: f64) -> Rect {
+    let xx = if width < 0.0 {
+        x + width
+    } else {
+        x
+    };
+    let yy = if height < 0.0 {
+        y + height
+    } else {
+        y
+    };
+    return Rect::from_xywh(xx as f32, yy as f32, width.abs() as f32, height.abs() as f32).unwrap();
+}
+
 #[rquickjs::methods(rename_all = "camelCase")]
 impl DrawContext {
     /// Create new image with zoom factor.
@@ -712,14 +726,22 @@ impl DrawContext {
         let mut paint = Paint::default();
         paint.set_color(self.draw_state.fill_style);
         paint.anti_alias = true;
+        // Check for negative width/height, normalize
+        let mut nx = x;
+        let mut ny = y;
+        if width < 0.0 {
+            nx += width;
+        }
+        if height < 0.0 {
+            ny += height;
+        }
         self.surface.fill_rect(
-            Rect::from_xywh(
-                (x * self.zoom) as f32,
-                (y * self.zoom) as f32,
-                (width * self.zoom) as f32,
-                (height * self.zoom) as f32,
-            )
-            .unwrap(),
+            normalized_rect(
+                x * self.zoom,
+                y * self.zoom,
+                width * self.zoom,
+                height * self.zoom,
+            ),
             &paint,
             self.transform,
             None,
