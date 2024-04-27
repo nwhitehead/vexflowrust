@@ -441,6 +441,7 @@ impl DrawContext {
         }
     }
 
+    /// Add rectangle to current path
     pub fn rect(&mut self, x: f64, y: f64, width: f64, height: f64) {
         assert!(self.path.is_some());
         self.path
@@ -507,6 +508,7 @@ impl DrawContext {
             .fill_path(&final_path, &paint, FillRule::Winding, self.transform, None);
     }
 
+    /// Draw filled rectangle over image
     #[qjs(rename = "fillRect")]
     pub fn fill_rect(&mut self, x: f64, y: f64, width: f64, height: f64, r: f64, g: f64, b: f64) {
         let mut paint = Paint::default();
@@ -563,12 +565,14 @@ impl DrawContext {
         );
     }
 
+    /// Clear entire image, set to fixed color
     pub fn clear(&mut self, r: f64, g: f64, b: f64, a: f64) {
         self.surface
             .fill(Color::from_rgba(r as f32, g as f32, b as f32, a as f32).unwrap());
     }
 }
 
+/// Print to console
 pub fn print(msg: String) {
     println!("{msg}");
 }
