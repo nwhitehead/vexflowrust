@@ -11,36 +11,57 @@ use tiny_skia::{
     PremultipliedColorU8, Rect, Stroke, Transform,
 };
 
+/// A library of fonts that are ready to use
 pub struct FontLibrary {
+    /// Owned font Bravura for musical glyphs
     bravura_font: FontVec,
+    /// Owned font for regular text (used for many things, e.g. fingering numbers)
     regular_font: FontVec,
+    /// Owned font for italic text (often used, e.g. 8va annotation)
     italic_font: FontVec,
+    /// Owned font for bold text (used for some things, e.g. certain types of tab fingerings)
     bold_font: FontVec,
+    /// Owned font for bold italic text (mostly for completeness)
     bold_italic_font: FontVec,
 }
 
 impl FontLibrary {
+    /// Creates a filled font library with build-in fonts.
+    ///
     pub fn new() -> Self {
         FontLibrary {
             bravura_font: FontVec::try_from_vec(include_bytes!("../fonts/Bravura.otf").to_vec())
-                .unwrap(),
+                .expect("Failed to load Bravura.otf embedded font"),
             regular_font: FontVec::try_from_vec(
                 include_bytes!("../fonts/AcademicoRegular.otf").to_vec(),
             )
-            .unwrap(),
+            .expect("Failed to load AcademicoRegular.otf embedded font"),
             italic_font: FontVec::try_from_vec(
                 include_bytes!("../fonts/AcademicoItalic.otf").to_vec(),
             )
-            .unwrap(),
+            .expect("Failed to load AcademicoItalic.otf embedded font"),
             bold_font: FontVec::try_from_vec(include_bytes!("../fonts/AcademicoBold.otf").to_vec())
-                .unwrap(),
+                .expect("Failed to load AcademicoBold.otf embedded font"),
             bold_italic_font: FontVec::try_from_vec(
                 include_bytes!("../fonts/AcademicoBoldItalic.otf").to_vec(),
             )
-            .unwrap(),
+            .expect("Failed to load AcademicoBoldItalic.otf embedded font"),
         }
     }
 
+    /// Given a specific codepoint, compute outline glyph
+    ///
+    /// No font family is given here. The FontLibrary takes care of choosing the
+    /// font to use.
+    ///
+    /// Resolution order:
+    /// 1) Musical glyphs
+    /// 2) Text font with correct combination of bold/italic
+    ///
+    /// The position x, y is needed to account for differences in rendering
+    /// based on subpixel aliasing. The x,y position passed should be fractions
+    /// of pixel units.
+    ///
     pub fn lookup_glyph(
         &self,
         codepoint: u32,
@@ -50,10 +71,10 @@ impl FontLibrary {
         x: f32,
         y: f32,
     ) -> (PxScaleFont<&FontVec>, Glyph) {
-        let ch = char::from_u32(codepoint).unwrap();
+        let ch = char::from_u32(codepoint).expect("Illegal codepoint, is not a char");
         // First try Bravura
         let chosen_font = &self.bravura_font;
-        let scale = chosen_font.pt_to_px_scale(size).unwrap();
+        let scale = chosen_font.pt_to_px_scale(size).expect("Illegal font size");
         let glyph = chosen_font
             .glyph_id(ch)
             .with_scale_and_position(scale, point(x, y));
@@ -74,7 +95,7 @@ impl FontLibrary {
                 &self.regular_font
             }
         };
-        let scale = chosen_font.pt_to_px_scale(size).unwrap();
+        let scale = chosen_font.pt_to_px_scale(size).expect("Illegal font size");
         let glyph2 = chosen_font
             .glyph_id(ch)
             .with_scale_and_position(scale, point(x, y));
@@ -82,25 +103,43 @@ impl FontLibrary {
     }
 }
 
+/// A drawing context exposed to JS for rendering.
+///
+/// Owns its own surface with pixel data.
 #[derive(Trace)]
 #[rquickjs::class]
 pub struct DrawContext {
+    /// Width in pixels of surface
     width: u32,
+    /// Height in pixels of surface
     height: u32,
+    /// Zoom factor, 1.0 is normal, higher is more zoomed in
     zoom: f64,
+    /// Pixel data for image
     #[qjs(skip_trace)]
     surface: Pixmap,
-    font: String,
+    /// Current path being constructed with drawing commands
     #[qjs(skip_trace)]
     path: Option<PathBuilder>,
+    /// Font library for resolving codepoints
     #[qjs(skip_trace)]
     font_library: FontLibrary,
+    /// Current graphical transform
     #[qjs(skip_trace)]
     transform: Transform,
 }
 
 #[rquickjs::methods]
 impl DrawContext {
+    /// Create new image with zoom factor.
+    ///
+    /// Size of actual image is zoom factor multiplied by given width and
+    /// height. Example:
+    ///
+    ///     DrawContext::new(100, 100, 2.0)
+    ///
+    /// The above creates an image of size 200x200.
+    ///
     #[qjs(constructor)]
     pub fn new(width: u32, height: u32, zoom: f64) -> Self {
         DrawContext {
@@ -108,14 +147,22 @@ impl DrawContext {
             height,
             zoom,
             surface: Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
-                .unwrap(),
-            font: "".to_string(),
+                .expect("Could not create new PixMap of requested size"),
             path: None,
             font_library: FontLibrary::new(),
             transform: Transform::identity(),
         }
     }
 
+    /// Get the current graphical transform.
+    ///
+    /// Format is vector: [sx, kx, ky, sy, tx, ty]
+    ///
+    /// Matrix is:
+    ///
+    ///     sx ky tx
+    ///     kx sy ty
+    ///
     #[qjs(rename = "getTransform")]
     pub fn get_transform(&mut self) -> std::vec::Vec<f64> {
         return vec![
@@ -128,6 +175,9 @@ impl DrawContext {
         ];
     }
 
+    /// Set the current graphical transform.
+    ///
+    /// Format is vector: [sx, kx, ky, sy, tx, ty]
     #[qjs(rename = "setTransform")]
     pub fn set_transform(&mut self, t: std::vec::Vec<f64>) {
         self.transform = Transform {
@@ -140,30 +190,37 @@ impl DrawContext {
         }
     }
 
+    /// Apply a scale to the current transformation
     pub fn scale(&mut self, sx: f64, sy: f64) {
         self.transform = self.transform.post_scale(sx as f32, sy as f32);
     }
 
+    /// Add a translation to the current transformation
     pub fn translate(&mut self, x: f64, y: f64) {
         self.transform = self
             .transform
             .post_translate((-x * self.zoom) as f32, (-y * self.zoom) as f32);
     }
 
+    /// Add a rotation to the current transformation
+    /// Angle is specified in radians.
     pub fn rotate(&mut self, angle: f64) {
         self.transform = self.transform.post_rotate(angle.to_degrees() as f32);
     }
 
+    /// Measure a single glyph from a codepoint.
+    ///
+    /// Return value is [ h_advance, v_advance, ascent, descent, glyph_top, glyph_bottom ]
     #[qjs(rename = "measureText")]
     pub fn measure_text(
         &mut self,
-        txtch: u32,
+        codepoint: u32,
         size: f64,
         italic: bool,
         bold: bool,
     ) -> std::vec::Vec<f64> {
         let (scaled_font, glyph) = self.font_library.lookup_glyph(
-            txtch,
+            codepoint,
             (size * self.zoom) as f32,
             italic,
             bold,
@@ -174,6 +231,7 @@ impl DrawContext {
         let descent = scaled_font.descent();
         let h_advance = scaled_font.h_advance(glyph.id);
         let v_advance = scaled_font.v_advance(glyph.id);
+        // If it has a path, get bounds.
         if let Some(g) = scaled_font.outline_glyph(glyph) {
             let bounds = g.px_bounds();
             return vec![
@@ -185,6 +243,7 @@ impl DrawContext {
                 bounds.max.y as f64,
             ];
         }
+        // No path, return what we can from font info.
         return vec![
             h_advance as f64,
             v_advance as f64,
@@ -195,6 +254,86 @@ impl DrawContext {
         ];
     }
 
+    /// Draw one codepoint (glyph), return how much to advance in x direction
+    ///
+    /// Algorithm is to render glyph to fresh pixmap with anti-aliasing and
+    /// final color, then draw the glyph pixmap to the surface through the
+    /// transformation matrix. This allows text to be scaled, rotated, etc. and
+    /// to have alpha blending with existing surface.
+    ///
+    /// extra_zoom parameter is extra factor to avoid pixellation during
+    /// rendering for transformations that do scaling. Avoids doing things like
+    /// drawing pixel glyph bitmap with scale factor of 2 (blocky pixels).
+    fn fill_char(
+        &mut self,
+        codepoint: u32,
+        x: f64,
+        y: f64,
+        size: f64,
+        zoom: f64,
+        extra_zoom: f64,
+        italic: bool,
+        bold: bool,
+        r: f64,
+        g: f64,
+        b: f64,
+        a: f64,
+    ) -> f64 {
+        let total_zoom = zoom * extra_zoom as f64;
+        let x_real = (x * total_zoom) as f32;
+        let x_i = x_real as i32;
+        let x_frac = x_real - x_i as f32;
+        let y_real = (y * total_zoom) as f32;
+        let y_i = y_real as i32;
+        let y_frac = y_real - y_i as f32;
+        let (scaled_font, glyph) = self.font_library.lookup_glyph(
+            codepoint,
+            (size * total_zoom) as f32,
+            italic,
+            bold,
+            x_frac,
+            y_frac,
+        );
+        let h_advance = scaled_font.h_advance(glyph.id) as f64 / total_zoom;
+        if let Some(og) = scaled_font.outline_glyph(glyph) {
+            let bounds = og.px_bounds();
+            let rg_width =
+                (f32::ceil(bounds.max.x) as i32 - f32::floor(bounds.min.x) as i32 + 1) as u32;
+            let rg_height =
+                (f32::ceil(bounds.max.y) as i32 - f32::floor(bounds.min.y) as i32 + 1) as u32;
+            let mut rendered_glyph =
+                Pixmap::new(rg_width, rg_height).expect("Could not create PixMap to render glyph");
+            let rg_pixels = rendered_glyph.pixels_mut();
+            og.draw(|xx, yy, c| {
+                let true_alpha = (c as f64) * a;
+                let rg_xi = xx as u32;
+                let rg_yi = yy as u32;
+                if let Some(color) = PremultipliedColorU8::from_rgba(
+                    (r * true_alpha * 255.0) as u8,
+                    (g * true_alpha * 255.0) as u8,
+                    (b * true_alpha * 255.0) as u8,
+                    (true_alpha * 255.0) as u8,
+                ) {
+                    rg_pixels[(rg_xi + rg_yi * rg_width) as usize] = color;
+                }
+            });
+            let descaled_transform = self
+                .transform
+                .clone()
+                .post_scale((1.0 / extra_zoom) as f32, (1.0 / extra_zoom) as f32);
+            self.surface.draw_pixmap(
+                x_i + bounds.min.x as i32,
+                y_i + bounds.min.y as i32,
+                rendered_glyph.as_ref(),
+                &PixmapPaint::default(),
+                descaled_transform,
+                None,
+            );
+        }
+        return h_advance;
+    }
+
+    /// Draw text string at fixed position with given color.
     #[qjs(rename = "fillText")]
     pub fn fill_text(
         &mut self,
@@ -210,62 +349,30 @@ impl DrawContext {
         a: f64,
     ) {
         let mut x_pos = x;
+        // Compute extra_zoom as max of scale factors. Should look good in every situation I think.
+        let extra_zoom = f32::max(self.transform.sx.abs(), self.transform.sy.abs());
         for ch in txt.chars() {
-            // We can have scale factors in self.transform and self.zoom
-            // If self.transform is also zooming in, need to render more pixels in our glyph pixmap
-            // Do this by scaling before rending glyph, then give de-scaled transform to draw_pixmap.
-            let extra_zoom = f32::max(self.transform.sx.abs(), self.transform.sy.abs());
-            let total_zoom = self.zoom * extra_zoom as f64;
-            let x_real = (x_pos * total_zoom) as f32;
-            let x_i = x_real as i32;
-            let x_frac = x_real - x_i as f32;
-            let y_real = (y * total_zoom) as f32;
-            let y_i = y_real as i32;
-            let y_frac = y_real - y_i as f32;
-            let (scaled_font, glyph) = self.font_library.lookup_glyph(
+            let h_advance = self.fill_char(
                 ch as u32,
-                (size * total_zoom) as f32,
+                x_pos,
+                y,
+                size,
+                self.zoom,
+                extra_zoom as f64,
                 italic,
                 bold,
-                x_frac,
-                y_frac,
+                r,
+                g,
+                b,
+                a,
             );
-            let h_advance = scaled_font.h_advance(glyph.id) as f64 / total_zoom;
-            if let Some(og) = scaled_font.outline_glyph(glyph) {
-                let bounds = og.px_bounds();
-                let rg_width =
-                    (f32::ceil(bounds.max.x) as i32 - f32::floor(bounds.min.x) as i32 + 1) as u32;
-                let rg_height =
-                    (f32::ceil(bounds.max.y) as i32 - f32::floor(bounds.min.y) as i32 + 1) as u32;
-                let mut rendered_glyph = Pixmap::new(rg_width, rg_height).unwrap();
-                let rg_pixels = rendered_glyph.pixels_mut();
-                og.draw(|xx, yy, c| {
-                    let true_alpha = (c as f64) * a;
-                    let rg_xi = xx as u32;
-                    let rg_yi = yy as u32;
-                    rg_pixels[(rg_xi + rg_yi * rg_width) as usize] =
-                        PremultipliedColorU8::from_rgba(
-                            (r * true_alpha * 255.0) as u8,
-                            (g * true_alpha * 255.0) as u8,
-                            (b * true_alpha * 255.0) as u8,
-                            (true_alpha * 255.0) as u8,
-                        )
-                        .unwrap();
-                });
-                let descaled_transform = self.transform.clone().post_scale((1.0 / extra_zoom) as f32, (1.0 / extra_zoom) as f32);
-                self.surface.draw_pixmap(
-                    x_i + bounds.min.x as i32,
-                    y_i + bounds.min.y as i32,
-                    rendered_glyph.as_ref(),
-                    &PixmapPaint::default(),
-                    descaled_transform,
-                    None,
-                );
-                x_pos += h_advance;
-            }
+            x_pos += h_advance;
         }
     }
 
+    /// Save image to a file.
+    ///
+    /// As a convenience, creates parent directories of file if needed.
     pub fn save(&mut self, filename: String) {
         let filepath = std::path::Path::new(&filename);
         if let Some(p) = filepath.parent() {
@@ -314,10 +421,21 @@ impl DrawContext {
         );
     }
 
-    pub fn arc(&mut self, x: f64, y: f64, radius: f64, start_angle: f64, end_angle: f64, _counterclockwise: bool) {
+    pub fn arc(
+        &mut self,
+        x: f64,
+        y: f64,
+        radius: f64,
+        start_angle: f64,
+        end_angle: f64,
+        _counterclockwise: bool,
+    ) {
         assert!(self.path.is_some());
         if start_angle == 0.0 && (end_angle - std::f64::consts::TAU).abs() < 1e-10 {
-            self.path.as_mut().expect("path must be created").push_circle(x as f32, y as f32, radius as f32);
+            self.path
+                .as_mut()
+                .expect("path must be created")
+                .push_circle(x as f32, y as f32, radius as f32);
         } else {
             println!("Non circle arc encountered, ignoring");
         }
@@ -325,7 +443,10 @@ impl DrawContext {
 
     pub fn rect(&mut self, x: f64, y: f64, width: f64, height: f64) {
         assert!(self.path.is_some());
-        self.path.as_mut().expect("path must be created").push_rect(Rect::from_xywh(x as f32, y as f32, width as f32, height as f32).unwrap());
+        self.path
+            .as_mut()
+            .expect("path must be created")
+            .push_rect(Rect::from_xywh(x as f32, y as f32, width as f32, height as f32).unwrap());
     }
 
     #[qjs(rename = "bezierCurveTo")]
@@ -405,8 +526,8 @@ impl DrawContext {
         );
     }
 
-    /// Set surface to color given with alpha
-    /// So this can erase canvas, or set to background color
+    /// Set surface to color given, including alpha.
+    /// So this can erase canvas, or set to background color.
     #[qjs(rename = "clearRect")]
     pub fn clear_rect(
         &mut self,
@@ -471,16 +592,22 @@ where
 
 fn format_exception(v: Value) -> String {
     if v.is_error() || v.is_exception() {
-        let ex = v.as_exception().unwrap();
+        let ex = v.as_exception().expect("Value that had v.is_error() || v.is_exception() could not be converted with v.as_exception()");
         return format!(
             "Uncaught exception: {}\n{}",
-            ex.message().unwrap(),
-            ex.stack().unwrap()
+            ex.message().unwrap_or_else(|| "<no msg>".to_string()),
+            ex.stack().unwrap_or_else(|| "<no stack>".to_string())
         );
     }
     if v.is_string() {
-        return v.into_string().unwrap().to_string().unwrap();
+        if let Some(s) = v.into_string() {
+            return s
+                .to_string()
+                .unwrap_or_else(|_| "<no string value>".to_string());
+        }
+        return "<unconvertable string>".to_string();
     }
+    // Fallback to debugger output if we get something unknown, make sure to show something at least.
     return format!("Uncaught exception: {:?}", v);
 }
 
@@ -491,8 +618,8 @@ fn main() {
         FileResolver::default().with_path("./"),
     );
     let loader = (BuiltinLoader::default(), ScriptLoader::default());
-    let runtime = Runtime::new().unwrap();
-    let ctx = Context::full(&runtime).unwrap();
+    let runtime = Runtime::new().expect("Could not create JS Runtime");
+    let ctx = Context::full(&runtime).expect("Could not create JS Context");
     runtime.set_loader(resolver, loader);
     ctx.with(|ctx| {
         let global = ctx.globals();
