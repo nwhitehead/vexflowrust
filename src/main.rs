@@ -663,7 +663,7 @@ impl DrawContext {
         );
     }
 
-    pub fn stroke(&mut self, width: f64, r: f64, g: f64, b: f64, a: f64) {
+    pub fn stroke(&mut self, width: f64) {
         assert!(self.path.is_some());
         let final_path = self
             .path
@@ -673,12 +673,7 @@ impl DrawContext {
             .finish()
             .unwrap();
         let mut paint = Paint::default();
-        paint.set_color_rgba8(
-            (r * 255.0) as u8,
-            (g * 255.0) as u8,
-            (b * 255.0) as u8,
-            (a * 255.0) as u8,
-        );
+        paint.set_color(self.draw_state.stroke_style);
         paint.anti_alias = true;
         let mut stroke = Stroke::default();
         stroke.width = (width * self.zoom) as f32;

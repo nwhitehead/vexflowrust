@@ -487,8 +487,8 @@ class CanvasContext {
     }
     stroke() {
         console.debug(`CanvasContext::stroke strokeStyle=${this.strokeStyle} lineWidth=${this.lineWidth}`);
-        const { r, g, b, a } = this.getStrokeColor();;
-        this.ctx.stroke(this.lineWidth || 1.0, r, g, b, a);
+        this.ctx.strokeStyle = this.strokeStyle;
+        this.ctx.stroke(this.lineWidth || 1.0);
     }
     setLineDash(dash) {
         console.debug(`CanvasContext::setLineDash ${dash} strokeStyle=${this.strokeStyle} lineWidth=${this.lineWidth}`);
