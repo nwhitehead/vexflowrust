@@ -22,6 +22,8 @@ use tiny_skia::{
     BlendMode, Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint,
     PremultipliedColorU8, Rect, Stroke, Transform,
 };
+use phf::phf_map;
+use regex::Regex;
 
 /// A library of fonts that are ready to use
 pub struct FontLibrary {
@@ -173,8 +175,84 @@ pub struct DrawContext {
     transform: Transform,
 }
 
-fn parse_color(name: &str) -> Option<Color> {
+static NAMED_COLORS: phf::Map<&'static str, &'static str> = phf_map! {
+    "none" => "#0000",
+    "transparent" => "#0000",
+    "black" => "#000",
+    "white" => "#fff",
+    "red" => "#f00",
+    "green" => "#0f0",
+    "blue" => "#00f",
+    "purple" => "#800080",
+    "darkturquoise" => "#00ced1",
+    "tomato" => "#ff6347",
+    "lawngreen" => "#7cfc00",
+    "orange" => "#ffa500",
+    "brown" => "#a52a2a",
+    "lightgreen" => "#90ee90",
+};
+
+fn parse_color(text: &str) -> Option<Color> {
+    let mut current_text = text;
+    // First do named color substitution
+    if let Some(new_text) = NAMED_COLORS.get(text) {
+        current_text = new_text;
+    }
+    // Failure to compile any regex expression is legitimate bug, use unwrap()
+    // Any failures in hex parsing propagate to None return value
+    if let Some(captures) = Regex::new(r"^#(.)(.)(.)$").unwrap().captures(current_text) {
+        let r = u8::from_str_radix(&captures[1], 16).ok()? * 17;
+        let g = u8::from_str_radix(&captures[2], 16).ok()? * 17;
+        let b = u8::from_str_radix(&captures[3], 16).ok()? * 17;
+        return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0);
+    }
+    if let Some(captures) = Regex::new(r"^#(.)(.)(.)(.)$").unwrap().captures(current_text) {
+        let r = u8::from_str_radix(&captures[1], 16).ok()? * 17;
+        let g = u8::from_str_radix(&captures[2], 16).ok()? * 17;
+        let b = u8::from_str_radix(&captures[3], 16).ok()? * 17;
+        let a = u8::from_str_radix(&captures[4], 16).ok()? * 17;
+        return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, a as f32 / 255.0);
+    }
+    if let Some(captures) = Regex::new(r"^#(..)(..)(..)$").unwrap().captures(current_text) {
+        let r = u8::from_str_radix(&captures[1], 16).ok()?;
+        let g = u8::from_str_radix(&captures[2], 16).ok()?;
+        let b = u8::from_str_radix(&captures[3], 16).ok()?;
+        return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0);
+    }
+    if let Some(captures) = Regex::new(r"^#(..)(..)(..)(..)$").unwrap().captures(current_text) {
+        let r = u8::from_str_radix(&captures[1], 16).ok()?;
+        let g = u8::from_str_radix(&captures[2], 16).ok()?;
+        let b = u8::from_str_radix(&captures[3], 16).ok()?;
+        let a = u8::from_str_radix(&captures[4], 16).ok()?;
+        return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, a as f32 / 255.0);
+    }
     return Color::from_rgba(0.0, 0.0, 0.0, 1.0);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_color() {
+        assert_eq!(parse_color("#f00"), Color::from_rgba(1.0, 0.0, 0.0, 1.0));
+        assert_eq!(parse_color("#0f0"), Color::from_rgba(0.0, 1.0, 0.0, 1.0));
+        assert_eq!(parse_color("#00f"), Color::from_rgba(0.0, 0.0, 1.0, 1.0));
+        assert_eq!(parse_color("#f000"), Color::from_rgba(1.0, 0.0, 0.0, 0.0));
+        assert_eq!(parse_color("#0f00"), Color::from_rgba(0.0, 1.0, 0.0, 0.0));
+        assert_eq!(parse_color("#00f0"), Color::from_rgba(0.0, 0.0, 1.0, 0.0));
+        assert_eq!(parse_color("#000f"), Color::from_rgba(0.0, 0.0, 0.0, 1.0));
+        assert_eq!(parse_color("#ff0000"), Color::from_rgba(1.0, 0.0, 0.0, 1.0));
+        assert_eq!(parse_color("#00ff00"), Color::from_rgba(0.0, 1.0, 0.0, 1.0));
+        assert_eq!(parse_color("#0000ff"), Color::from_rgba(0.0, 0.0, 1.0, 1.0));
+        assert_eq!(parse_color("#ff000000"), Color::from_rgba(1.0, 0.0, 0.0, 0.0));
+        assert_eq!(parse_color("#00ff0000"), Color::from_rgba(0.0, 1.0, 0.0, 0.0));
+        assert_eq!(parse_color("#0000ff00"), Color::from_rgba(0.0, 0.0, 1.0, 0.0));
+        assert_eq!(parse_color("#000000ff"), Color::from_rgba(0.0, 0.0, 0.0, 1.0));
+        assert_eq!(parse_color("#800000"), Color::from_rgba((8.0 * 16.0 / 255.0) as f32, 0.0, 0.0, 1.0));
+        assert_eq!(parse_color("black"), Color::from_rgba(0.0, 0.0, 0.0, 1.0));
+        assert_eq!(parse_color("blue"), Color::from_rgba(0.0, 0.0, 1.0, 1.0));
+    }
 }
 
 #[rquickjs::methods(rename_all = "camelCase")]
