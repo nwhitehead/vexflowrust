@@ -146,7 +146,16 @@ const qunitAssert = {
         if (isEqual(a, b)) {
             throw new Error(msg);
         }
-    }
+    },
+    propEqual(a, b, msg) {
+        const keys1 = Object.keys(a).sort();
+        const keys2 = Object.keys(b).sort();
+        if (!isEqual(keys1, keys2)) return false;
+        for (const key of keys1) {
+            if (a[key] !== b[key]) return false;
+        }
+        return true;
+    },
 };
 
 globalThis.QUnit = {
