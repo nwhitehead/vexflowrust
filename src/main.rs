@@ -267,6 +267,10 @@ impl DrawContext {
     }
 
     pub fn save(&mut self, filename: String) {
+        let filepath = std::path::Path::new(&filename);
+        if let Some(p) = filepath.parent() {
+            std::fs::create_dir_all(p).expect("Could not create directory");
+        };
         self.surface.save_png(filename).unwrap();
     }
 
