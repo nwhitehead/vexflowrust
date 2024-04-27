@@ -210,7 +210,7 @@ impl DrawContext {
 
     /// Measure a single glyph from a codepoint.
     ///
-    /// Return value is [ h_advance, v_advance, ascent, descent, glyph_top, glyph_bottom ]
+    /// Return value is [ h_advance, ascent, descent, glyph_top, glyph_bottom ]
     #[qjs(rename = "measureText")]
     pub fn measure_text(
         &mut self,
@@ -230,29 +230,54 @@ impl DrawContext {
         let ascent = scaled_font.ascent();
         let descent = scaled_font.descent();
         let h_advance = scaled_font.h_advance(glyph.id);
-        let v_advance = scaled_font.v_advance(glyph.id);
         // If it has a path, get bounds.
         if let Some(g) = scaled_font.outline_glyph(glyph) {
             let bounds = g.px_bounds();
             return vec![
                 h_advance as f64,
-                v_advance as f64,
-                ascent as f64,
+                -ascent as f64,
                 descent as f64,
-                bounds.min.y as f64,
+                -bounds.min.y as f64,
                 bounds.max.y as f64,
             ];
         }
         // No path, return what we can from font info.
         return vec![
             h_advance as f64,
-            v_advance as f64,
-            ascent as f64,
+            -ascent as f64,
             descent as f64,
             0.0,
             0.0,
         ];
     }
+
+    // #[qjs(rename = "measureString")]
+    // pub fn measure_string(
+    //     &mut self,
+    //     string: String,
+    //     size: f64,
+    //     italic: bool,
+    //     bold: bool,
+    // ) -> Value {
+    //     let mut string_iter = string.chars();
+    //     // Get first character metrics
+    //     if let Some(first) = string_iter.next() {
+    //         let codepoint = first as u32;
+    //         let mut metrics: std::vec::Vec<f64> = self.measure_text(codepoint, size, italic, bold);
+    //         // Keep going, just updating total width
+    //         for ch in string_iter {
+    //             let extra_codepoint = ch as u32;
+    //             let extra_metrics = self.measure_text(extra_codepoint, size, italic, bold);
+    //             metrics[0] += extra_metrics[0];
+    //         }
+    //         let mut res_value = Object::new().unwrap();
+    //         return res_value.into();
+    //     }
+    //     // If we get here, we could not get first character
+    //     // Assume we want to measure null character
+    //     panic!("blah");
+    //     //return self.measure_text(0, size, italic, bold);
+    // }
 
     /// Draw one codepoint (glyph), return how much to advance in x direction
     ///
@@ -632,24 +657,16 @@ fn main() {
             .unwrap();
         Class::<DrawContext>::define(&global).unwrap();
         register_function(ctx.clone(), "print", print);
+        let mut options = EvalOptions::default();
+        options.global = false;
+        options.strict = true;
+        options.promise = true;
         match ctx.eval_file_with_options::<(), _>(
-            "src/unittest.js",
-            EvalOptions {
-                global: false,
-                strict: true,
-                backtrace_barrier: false,
-            },
+            "src/unittest.js", options
         ) {
             Err(Error::Exception) => println!("{}", format_exception(ctx.catch())),
             Err(e) => println!("Error! {:?}", e),
             Ok(_) => (),
         }
     });
-    // Make sure to keep going until work is actually done
-    while runtime.is_job_pending() {
-        match runtime.execute_pending_job() {
-            Ok(_) => (),
-            Err(e) => println!("Error! {:?}", e),
-        }
-    }
 }

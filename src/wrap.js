@@ -314,10 +314,10 @@ function measureTextLocal(drawContext, txt, size, italic, bold) {
         if (i == 0) {
             res = {
                 width: metrics[0],
-                fontBoundingBoxAscent: metrics[2] * -1.0,
-                fontBoundingBoxDescent: metrics[3] * 1.0,
-                actualBoundingBoxAscent: metrics[4] * -1.0,
-                actualBoundingBoxDescent: metrics[5] * 1.0,
+                fontBoundingBoxAscent: metrics[1],
+                fontBoundingBoxDescent: metrics[2],
+                actualBoundingBoxAscent: metrics[3],
+                actualBoundingBoxDescent: metrics[4],
             };
         } else {
             res.width += metrics[0];
@@ -426,9 +426,11 @@ class CanvasContext {
         this.ctx.quadraticCurveTo(cpx + this.offset.x, cpy + this.offset.y, x + this.offset.x, y + this.offset.y);
     }
     measureText(txt) {
-        console.debug(`CanvasContext::measureText`);
         const { size, italic, bold } = parseFont(this.font);
+        console.debug(`CanvasContext::measureText ${txt} ${size} ${italic} ${bold}`);
         return measureTextLocal(this.ctx, txt, size, italic, bold);
+        // const res = this.ctx.measureString(txt, size, italic, bold);
+        // console.debug(`measurements ${JSON.stringify(res)}`)
     }
     closePath() {
         console.debug(`CanvasContext::closePath`);

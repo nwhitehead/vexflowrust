@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 ab_glyph = "0.2.25"
-rquickjs = { version="0.5.1", features=["loader", "macro"] }
+rquickjs = { version="0.6.0", features=["loader", "macro"] }
 tiny-skia = { git = "https://github.com/nwhitehead/tiny-skia.git" }
