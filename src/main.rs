@@ -139,6 +139,7 @@ pub struct DrawState {
     line_width: f64,
     fill_style: Color,
     stroke_style: Color,
+    clear_style: Color,
     font_family: std::vec::Vec<String>,
     font_size: f64,
     font_bold: bool,
@@ -191,6 +192,10 @@ static NAMED_COLORS: phf::Map<&'static str, &'static str> = phf_map! {
     "brown" => "#a52a2a",
     "lightgreen" => "#90ee90",
 };
+
+fn unparse_color(c: &Color) -> String {
+    return format!("#{:02x}{:02x}{:02x}{:02x}", (c.red() * 255.0) as u8, (c.green() * 255.0) as u8, (c.blue() * 255.0) as u8, (c.alpha() * 255.0) as u8);
+}
 
 fn parse_color(text: &str) -> Option<Color> {
     let mut current_text = text;
@@ -271,6 +276,12 @@ mod tests {
         assert_eq!(parse_color("rgba(0,255,0,0.5)"), Color::from_rgba(0.0, 1.0, 0.0, 0.5));
         assert_eq!(parse_color("rgba(0,255,0,.5)"), Color::from_rgba(0.0, 1.0, 0.0, 0.5));
     }
+
+    #[test]
+    fn test_unparse_color() {
+        assert_eq!(unparse_color(&Color::from_rgba(0.0, 0.0, 0.0, 1.0).unwrap()), "#000000ff");
+        assert_eq!(unparse_color(&Color::from_rgba(80.0 / 255.0, 0.0, 0.0, 80.0 / 255.0).unwrap()), "#50000050");
+    }
 }
 
 #[rquickjs::methods(rename_all = "camelCase")]
@@ -286,18 +297,24 @@ impl DrawContext {
     ///
     #[qjs(constructor)]
     pub fn new(width: u32, height: u32, zoom: f64, background: String, foreground: String) -> Self {
+        let fill_style = parse_color(&foreground).expect("Could not create default fillStyle color");
+        let stroke_style = parse_color(&foreground).expect("Could not create default strokeStyle color");
+        let clear_style = parse_color(&background).expect("Could not create default clearStyle color");
+        let mut surface = Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
+        .expect("Could not create new PixMap of requested size");
+        surface.fill(clear_style);
         DrawContext {
             width,
             height,
             zoom,
-            surface: Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
-                .expect("Could not create new PixMap of requested size"),
+            surface,
             path: None,
             font_library: FontLibrary::new(),
             draw_state: DrawState {
                 line_width: 1.0,
-                fill_style: parse_color(&foreground).expect("Could not create default fillStyle color"),
-                stroke_style: parse_color(&foreground).expect("Could not create default color"),
+                fill_style,
+                stroke_style,
+                clear_style,
                 font_family: vec![],
                 font_size: 30.0,
                 font_bold: false,
@@ -306,6 +323,30 @@ impl DrawContext {
             },
             transform: Transform::identity(),
         }
+    }
+
+    #[qjs(set, rename = "fillStyle")]
+    pub fn set_fill_style(&mut self, style: String) {
+        if let Some(color) = parse_color(&style) {
+            self.draw_state.fill_style = color;
+        }
+    }
+
+    #[qjs(get, rename = "fillStyle")]
+    pub fn get_fill_style(&self) -> String {
+        return unparse_color(&self.draw_state.fill_style);
+    }
+
+    #[qjs(set, rename = "strokeStyle")]
+    pub fn set_stroke_style(&mut self, style: String) {
+        if let Some(color) = parse_color(&style) {
+            self.draw_state.stroke_style = color;
+        }
+    }
+
+    #[qjs(get, rename = "strokeStyle")]
+    pub fn get_stroke_style(&self) -> String {
+        return unparse_color(&self.draw_state.stroke_style);
     }
 
     /// Get the current graphical transform.
@@ -448,11 +489,11 @@ impl DrawContext {
         extra_zoom: f64,
         italic: bool,
         bold: bool,
-        r: f64,
-        g: f64,
-        b: f64,
-        a: f64,
     ) -> f64 {
+        let r = self.draw_state.fill_style.red() as f64;
+        let g = self.draw_state.fill_style.green() as f64;
+        let b = self.draw_state.fill_style.blue() as f64;
+        let a = self.draw_state.fill_style.alpha() as f64;
         let total_zoom = zoom * extra_zoom as f64;
         let x_real = (x * total_zoom) as f32;
         let x_i = x_real as i32;
@@ -516,10 +557,6 @@ impl DrawContext {
         size: f64,
         italic: bool,
         bold: bool,
-        r: f64,
-        g: f64,
-        b: f64,
-        a: f64,
     ) {
         let mut x_pos = x;
         // Compute extra_zoom as max of scale factors. Should look good in every situation I think.
@@ -534,10 +571,6 @@ impl DrawContext {
                 extra_zoom as f64,
                 italic,
                 bold,
-                r,
-                g,
-                b,
-                a,
             );
             x_pos += h_advance;
         }
@@ -654,8 +687,12 @@ impl DrawContext {
             .stroke_path(&final_path, &paint, &stroke, self.transform, None);
     }
 
-    pub fn fill(&mut self, r: f64, g: f64, b: f64, a: f64) {
+    pub fn fill(&mut self) {
         assert!(self.path.is_some());
+        let r = self.draw_state.fill_style.red() as f64;
+        let g = self.draw_state.fill_style.green() as f64;
+        let b = self.draw_state.fill_style.blue() as f64;
+        let a = self.draw_state.fill_style.alpha() as f64;
         let final_path = self
             .path
             .as_mut()
@@ -676,9 +713,9 @@ impl DrawContext {
     }
 
     /// Draw filled rectangle over image
-    pub fn fill_rect(&mut self, x: f64, y: f64, width: f64, height: f64, r: f64, g: f64, b: f64) {
+    pub fn fill_rect(&mut self, x: f64, y: f64, width: f64, height: f64) {
         let mut paint = Paint::default();
-        paint.set_color_rgba8((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8, 255);
+        paint.set_color(self.draw_state.fill_style);
         paint.anti_alias = true;
         self.surface.fill_rect(
             Rect::from_xywh(
@@ -702,18 +739,9 @@ impl DrawContext {
         y: f64,
         width: f64,
         height: f64,
-        r: f64,
-        g: f64,
-        b: f64,
-        a: f64,
     ) {
         let mut paint = Paint::default();
-        paint.set_color_rgba8(
-            (r * 255.0) as u8,
-            (g * 255.0) as u8,
-            (b * 255.0) as u8,
-            (a * 255.0) as u8,
-        );
+        paint.set_color(self.draw_state.clear_style);
         paint.anti_alias = true;
         paint.blend_mode = BlendMode::Source;
         self.surface.fill_rect(

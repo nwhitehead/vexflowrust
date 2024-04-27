@@ -360,7 +360,9 @@ class CanvasContext {
         // Set default values for state
         this.lineWidth = 1.0;
         this.fillStyle = "#000";
+        this.ctx.fillStyle = "#000";
         this.strokeStyle = "#000";
+        this.ctx.strokeStyle = "#000";
         this.font = "12pt Academico";
         // this.ctx transform already setup on Rust side to identity
     }
@@ -382,8 +384,8 @@ class CanvasContext {
     fillText(txt, x, y) {
         const { size, italic, bold } = parseFont(this.font);
         console.debug(`CanvasContext::fillText txt=${txt} x=${x} y=${y} size=${size} this.font=${this.font} this.fillStyle=${this.fillStyle}`);
-        const { r, g, b, a } = this.getFillColor();
-        this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size, italic, bold, r, g, b, a);
+        this.ctx.fillStyle = this.fillStyle;
+        this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size, italic, bold);
     }
     arc(x, y, radius, startAngle, endAngle, counterclockwise) {
         console.debug(`CanvasContext::arc ${x}, ${y} ${startAngle} ${endAngle} ${counterclockwise}`);
@@ -428,8 +430,8 @@ class CanvasContext {
     }
     fill() {
         console.debug(`CanvasContext::fill ${this.fillStyle}`);
-        const { r, g, b, a } = this.getFillColor();
-        this.ctx.fill(r, g, b, a);
+        this.ctx.fillStyle = this.fillStyle;
+        this.ctx.fill();
     }
     fillRect(x, y, width, height) {
         console.debug(`CanvasContext::fillRect ${x + this.offset.x}, ${y + this.offset.y}, ${width}, ${height} fillStyle=${this.fillStyle}`);
@@ -441,16 +443,12 @@ class CanvasContext {
             y += height;
             height *= -1;
         }
-        const { r, g, b, a } = this.getFillColor();
-        this.ctx.fillRect(x + this.offset.x, y + this.offset.y, width, height, r, g, b);
+        this.ctx.fillStyle = this.fillStyle;
+        this.ctx.fillRect(x + this.offset.x, y + this.offset.y, width, height);
     }
     clearRect(x, y, width, height) {
         console.debug(`CanvasContext::clearRect(${x}, ${y}, ${width}, ${height})`);
-        const r = this.actualCanvas.background.r;
-        const g = this.actualCanvas.background.g;
-        const b = this.actualCanvas.background.b;
-        const a = this.actualCanvas.background.a;
-        this.ctx.clearRect(x + this.offset.x, y + this.offset.y, width, height, r, g, b, a);
+        this.ctx.clearRect(x + this.offset.x, y + this.offset.y, width, height);
     }
     lineTo(x, y) {
         console.debug(`CanvasContext::lineTo ${x}, ${y}`);
@@ -504,9 +502,9 @@ export class Canvas {
         this.zoom = zoom;
         this.background = parseColor(background);
         this.foreground = parseColor(foreground);
-        this.drawContext = new DrawContext(width, height, this.zoom, /* bg */ '#000', /* fg */ '#fff');
+        this.drawContext = new DrawContext(width, height, this.zoom, /* bg */ '#fff', /* fg */ '#000');
         // Set opaque page
-        this.drawContext.clear(this.background.r, this.background.g, this.background.b, this.background.a);
+        //this.drawContext.clear(this.background.r, this.background.g, this.background.b, this.background.a);
         this.canvasContext = new CanvasContext(this.drawContext, this.zoom, this);
         // Set default fill and stroke to foreground color
         this.canvasContext.fillStyle = foreground;
