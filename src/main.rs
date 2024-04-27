@@ -226,6 +226,21 @@ fn parse_color(text: &str) -> Option<Color> {
         let a = u8::from_str_radix(&captures[4], 16).ok()?;
         return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, a as f32 / 255.0);
     }
+    if let Some(captures) = Regex::new(r"^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$").unwrap().captures(current_text) {
+        // Note change to radix 10
+        let r = u8::from_str_radix(&captures[1], 10).ok()?;
+        let g = u8::from_str_radix(&captures[2], 10).ok()?;
+        let b = u8::from_str_radix(&captures[3], 10).ok()?;
+        return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0);
+    }
+    if let Some(captures) = Regex::new(r"^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*(\.\d*)?)\s*\)$").unwrap().captures(current_text) {
+        // Note change to radix 10
+        let r = u8::from_str_radix(&captures[1], 10).ok()?;
+        let g = u8::from_str_radix(&captures[2], 10).ok()?;
+        let b = u8::from_str_radix(&captures[3], 10).ok()?;
+        let a: f32 = captures[4].parse().ok()?;
+        return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, a);
+    }
     return Color::from_rgba(0.0, 0.0, 0.0, 1.0);
 }
 
@@ -235,6 +250,8 @@ mod tests {
 
     #[test]
     fn test_parse_color() {
+        assert_eq!(parse_color("black"), Color::from_rgba(0.0, 0.0, 0.0, 1.0));
+        assert_eq!(parse_color("blue"), Color::from_rgba(0.0, 0.0, 1.0, 1.0));
         assert_eq!(parse_color("#f00"), Color::from_rgba(1.0, 0.0, 0.0, 1.0));
         assert_eq!(parse_color("#0f0"), Color::from_rgba(0.0, 1.0, 0.0, 1.0));
         assert_eq!(parse_color("#00f"), Color::from_rgba(0.0, 0.0, 1.0, 1.0));
@@ -250,8 +267,9 @@ mod tests {
         assert_eq!(parse_color("#0000ff00"), Color::from_rgba(0.0, 0.0, 1.0, 0.0));
         assert_eq!(parse_color("#000000ff"), Color::from_rgba(0.0, 0.0, 0.0, 1.0));
         assert_eq!(parse_color("#800000"), Color::from_rgba((8.0 * 16.0 / 255.0) as f32, 0.0, 0.0, 1.0));
-        assert_eq!(parse_color("black"), Color::from_rgba(0.0, 0.0, 0.0, 1.0));
-        assert_eq!(parse_color("blue"), Color::from_rgba(0.0, 0.0, 1.0, 1.0));
+        assert_eq!(parse_color("rgb(255,0,0)"), Color::from_rgba(1.0, 0.0, 0.0, 1.0));
+        assert_eq!(parse_color("rgba(0,255,0,0.5)"), Color::from_rgba(0.0, 1.0, 0.0, 0.5));
+        assert_eq!(parse_color("rgba(0,255,0,.5)"), Color::from_rgba(0.0, 1.0, 0.0, 0.5));
     }
 }
 
