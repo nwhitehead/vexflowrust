@@ -173,6 +173,10 @@ pub struct DrawContext {
     transform: Transform,
 }
 
+fn parse_color(name: &str) -> Option<Color> {
+    return Color::from_rgba(0.0, 0.0, 0.0, 1.0);
+}
+
 #[rquickjs::methods(rename_all = "camelCase")]
 impl DrawContext {
     /// Create new image with zoom factor.
@@ -185,7 +189,7 @@ impl DrawContext {
     /// The above creates an image of size 200x200.
     ///
     #[qjs(constructor)]
-    pub fn new(width: u32, height: u32, zoom: f64, background_color: String) -> Self {
+    pub fn new(width: u32, height: u32, zoom: f64, background: String, foreground: String) -> Self {
         DrawContext {
             width,
             height,
@@ -196,8 +200,8 @@ impl DrawContext {
             font_library: FontLibrary::new(),
             draw_state: DrawState {
                 line_width: 1.0,
-                fill_style: Color::from_rgba(0.0, 0.0, 0.0, 1.0).expect("Could not create default color"),
-                stroke_style: Color::from_rgba(0.0, 0.0, 0.0, 1.0).expect("Could not create default color"),
+                fill_style: parse_color(&foreground).expect("Could not create default fillStyle color"),
+                stroke_style: parse_color(&foreground).expect("Could not create default color"),
                 font_family: vec![],
                 font_size: 30.0,
                 font_bold: false,
