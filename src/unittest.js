@@ -8,4 +8,8 @@ async function main() {
     VexFlowTests.run();
 }
 
-await main();
+try {
+    await main();
+} catch(err) {
+    console.error(`Uncaught exception: ${err}\n${err.stack}`);
+}

@@ -1,3 +1,15 @@
+//
+// Lightweight renderer for VexFlow
+//
+// Recreates canvas CanvasContext2D interface with some limitations.
+//
+// * Only supports fixed font set, built-in to renderer
+// * Fonts can have italic and bold on/off but not other stuff
+// * arc() can only draw circles
+// * fillStyle and strokeStyle can only be colors (no gradients, dashes, etc.)
+// * Probably missing some functions
+//
+
 use ab_glyph::{point, Font, FontVec, Glyph, PxScaleFont, ScaleFont};
 use rquickjs::{
     class::Trace,
@@ -103,6 +115,8 @@ impl FontLibrary {
     }
 }
 
+/// Metrics to describe one or more glyphs
+/// Attempts to be compatible with browser FontMetrics
 #[derive(Trace)]
 #[rquickjs::class(rename_all = "camelCase")]
 pub struct FontMetrics {
@@ -116,6 +130,18 @@ pub struct FontMetrics {
     actual_bounding_box_ascent: f64,
     #[qjs(get, set)]
     actual_bounding_box_descent: f64,
+}
+
+/// Drawing state is part of the context
+pub struct DrawState {
+    line_width: f64,
+    fill_style: Color,
+    stroke_style: Color,
+    font_family: std::vec::Vec<String>,
+    font_size: f64,
+    font_bold: bool,
+    font_italic: bool,
+    transform: Transform,
 }
 
 /// A drawing context exposed to JS for rendering.
@@ -139,7 +165,10 @@ pub struct DrawContext {
     /// Font library for resolving codepoints
     #[qjs(skip_trace)]
     font_library: FontLibrary,
-    /// Current graphical transform
+    /// Drawing state
+    #[qjs(skip_trace)]
+    draw_state: DrawState,
+    /// Transform
     #[qjs(skip_trace)]
     transform: Transform,
 }
@@ -156,7 +185,7 @@ impl DrawContext {
     /// The above creates an image of size 200x200.
     ///
     #[qjs(constructor)]
-    pub fn new(width: u32, height: u32, zoom: f64) -> Self {
+    pub fn new(width: u32, height: u32, zoom: f64, background_color: String) -> Self {
         DrawContext {
             width,
             height,
@@ -165,6 +194,16 @@ impl DrawContext {
                 .expect("Could not create new PixMap of requested size"),
             path: None,
             font_library: FontLibrary::new(),
+            draw_state: DrawState {
+                line_width: 1.0,
+                fill_style: Color::from_rgba(0.0, 0.0, 0.0, 1.0).expect("Could not create default color"),
+                stroke_style: Color::from_rgba(0.0, 0.0, 0.0, 1.0).expect("Could not create default color"),
+                font_family: vec![],
+                font_size: 30.0,
+                font_bold: false,
+                font_italic: false,
+                transform: Transform::identity(),
+            },
             transform: Transform::identity(),
         }
     }
@@ -657,6 +696,7 @@ fn main() {
             .set("arg".to_string(), args[args.len() - 1].clone())
             .unwrap();
         Class::<DrawContext>::define(&global).unwrap();
+        Class::<FontMetrics>::define(&global).unwrap();
         register_function(ctx.clone(), "print", print);
         let mut options = EvalOptions::default();
         options.global = false;
