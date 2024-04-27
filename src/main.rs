@@ -263,33 +263,31 @@ impl DrawContext {
         };
 }
 
-    // #[qjs(rename = "measureString")]
-    // pub fn measure_string(
-    //     &mut self,
-    //     string: String,
-    //     size: f64,
-    //     italic: bool,
-    //     bold: bool,
-    // ) -> Value {
-    //     let mut string_iter = string.chars();
-    //     // Get first character metrics
-    //     if let Some(first) = string_iter.next() {
-    //         let codepoint = first as u32;
-    //         let mut metrics: std::vec::Vec<f64> = self.measure_text(codepoint, size, italic, bold);
-    //         // Keep going, just updating total width
-    //         for ch in string_iter {
-    //             let extra_codepoint = ch as u32;
-    //             let extra_metrics = self.measure_text(extra_codepoint, size, italic, bold);
-    //             metrics[0] += extra_metrics[0];
-    //         }
-    //         let mut res_value = Object::new().unwrap();
-    //         return res_value.into();
-    //     }
-    //     // If we get here, we could not get first character
-    //     // Assume we want to measure null character
-    //     panic!("blah");
-    //     //return self.measure_text(0, size, italic, bold);
-    // }
+    #[qjs(rename = "measureString")]
+    pub fn measure_string(
+        &mut self,
+        string: String,
+        size: f64,
+        italic: bool,
+        bold: bool,
+    ) -> FontMetrics {
+        let mut string_iter = string.chars();
+        // Get first character metrics
+        if let Some(first) = string_iter.next() {
+            let codepoint = first as u32;
+            let mut metrics = self.measure_text(codepoint, size, italic, bold);
+            // Keep going, just updating total width
+            for ch in string_iter {
+                let extra_codepoint = ch as u32;
+                let extra_metrics = self.measure_text(extra_codepoint, size, italic, bold);
+                metrics.width += extra_metrics.width;
+            }
+            return metrics;
+        }
+        // If we get here, we could not get first character
+        // Assume we want to measure null character
+        return self.measure_text(0, size, italic, bold);
+    }
 
     /// Draw one codepoint (glyph), return how much to advance in x direction
     ///

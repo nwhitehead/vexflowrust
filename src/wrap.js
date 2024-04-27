@@ -305,21 +305,6 @@ assert_same(parseColor('#800000'), { r: 128/255, g: 0, b: 0, a: 1});
 assert_same(parseColor('#008000'), { r: 0, g: 128/255, b: 0, a: 1});
 assert_same(parseColor('#000080'), { r: 0, g: 0, b: 128/255, a: 1});
 
-function measureTextLocal(drawContext, txt, size, italic, bold) {
-    let res = {};
-    // Make sure txt is nonempty, measure null codepoint if given nothing
-    txt = txt || "\0";
-    for(let i = 0; i < txt.length; i++) {
-        const metrics = drawContext.measureText(txt.codePointAt(i), size, italic, bold);
-        if (i == 0) {
-            res = metrics;
-        } else {
-            res.width += metrics.width;
-        }
-    }
-    return res;
-}
-
 globalThis.document = {
     getElementById(id) {
         // Should only get here when testing Factory
@@ -353,6 +338,7 @@ globalThis.document = {
         }
         assert(t === 'canvas', `Can only create canvas got t=${t}`);
         // Canvases created during rendering are for font measuring and testing only.
+        // So just create dummy canvas.
         const canvas = new Canvas(1, 1, 1.0, '#fff', '#000', false);
         return canvas;
     }
@@ -422,9 +408,7 @@ class CanvasContext {
     measureText(txt) {
         const { size, italic, bold } = parseFont(this.font);
         console.debug(`CanvasContext::measureText ${txt} ${size} ${italic} ${bold}`);
-        return measureTextLocal(this.ctx, txt, size, italic, bold);
-        // const res = this.ctx.measureString(txt, size, italic, bold);
-        // console.debug(`measurements ${JSON.stringify(res)}`)
+        return this.ctx.measureString(txt, size, italic, bold);
     }
     closePath() {
         console.debug(`CanvasContext::closePath`);
