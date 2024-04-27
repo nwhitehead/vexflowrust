@@ -65,10 +65,6 @@ function sanitize(text: string): string {
   return text.replace(/[^a-zA-Z0-9]/g, '_');
 }
 
-function showConsoleBar() {
-  console.log(`${"\u2550".repeat(100)}`);
-}
-
 interface Test {
   Start(): void;
 }
@@ -92,7 +88,6 @@ export class VexFlowTests {
   // flow.html calls this to invoke all the tests.
   static run(runOptions?: RunOptions): void {
     const { jobs, job } = VexFlowTests.parseJobOptions(runOptions);
-    showConsoleBar();
     VexFlowTests.tests.forEach((test, idx: number) => {
       if (jobs === 1 || idx % jobs === job) {
         test.Start();
@@ -180,7 +175,6 @@ export class VexFlowTests {
       const elementId = VexFlowTests.generateTestID(`${testTypeLowerCase}`);
       const moduleName = assert.test.module.name;
       const title = moduleName + ' › ' + name + ` › ${testType}`;
-      console.log(`\n${title}\n`);
       const prefix = testTypeLowerCase + '_';
       const titleId = `${prefix}${sanitize(moduleName)}.${sanitize(name)}`;
       const options: TestOptions = { elementId, params, assert, backend };
@@ -188,7 +182,6 @@ export class VexFlowTests {
       if (helper) {
         helper();
       }
-      showConsoleBar();
     });
   }
 

@@ -78,99 +78,52 @@ ${'\u2550'.repeat(100)}`);
 globalThis.window = {};
 
 
-const qunitAssert = {
-    equal(a, b, msg) {
-        if (a !== b) {
-            // For some reason an array of one element is considered the same as the other element...
-            // Used by easyscore_tests.js
-            if (Array.isArray(a) && a.length === 1) {
-                a = a[0];
-                if (a === b) {
-                    return;
-                }
-            }
-            if (!a && !b) {
-                // I guess undefined and null are the equal???
-                return;
-            }
-            console.log(`${a} ${b}`);
-            throw new Error(msg);
-        }
-    },
-    notEqual(a, b, msg) {
-        if (a === b) {
-            throw new Error(msg);
-        }
-    },
-    strictEqual(a, b, msg) {
-        if (a !== b) {
-            throw new Error(msg);
-        }
-    },
-    notStrictEqual(a, b, msg) {
-        if (a === b) {
-            throw new Error(msg);
-        }
-    },
-    ok(a, msg) {
-        if (!a) {
-            throw new Error(msg);
-        }
-    },
-    expect(n) {
-        // This is supposed to count how many asserts there were...
-        // I'm too lazy to do this
-    },
-    throws(func, msg) {
-        let caught = null;
-        try {
-            func();
-        } catch(e) {
-            caught = e;
-        }
-        if (caught === null) {
-            throw new Error(msg);
-        }
-    },
-    notOk(condition, msg) {
-        if (condition) {
-            throw new Error(msg);
-        }
-    },
-    deepEqual(a, b, msg) {
-        if (!isEqual(a, b)) {
-            throw new Error(msg);
-        }
-    },
-    notDeepEqual(a, b, msg) {
-        if (isEqual(a, b)) {
-            throw new Error(msg);
-        }
-    },
-    propEqual(a, b, msg) {
-        const keys1 = Object.keys(a).sort();
-        const keys2 = Object.keys(b).sort();
-        if (!isEqual(keys1, keys2)) return false;
-        for (const key of keys1) {
-            if (a[key] !== b[key]) return false;
-        }
-        return true;
-    },
-};
+// When generating PNG images for the visual regression tests,
+// we mock out the QUnit methods (since we don't care about assertions).
+if (!globalThis.QUnit) {
+    const QUMock = {
+        moduleName: '',
+        testName: '',
 
-globalThis.QUnit = {
-    module(msg) {
-        this.moduleName = msg;
-    },
-    test(name, func) {
-        this.testName = name;
-        qunitAssert.test = {
-            module: { name },
-        };
-        func(qunitAssert);
+        assertions: {
+            ok: () => true,
+            equal: () => true,
+            deepEqual: () => true,
+            expect: () => true,
+            throws: () => true,
+            notOk: () => true,
+            notEqual: () => true,
+            notDeepEqual: () => true,
+            strictEqual: () => true,
+            notStrictEqual: () => true,
+            propEqual: () => true,
+        },
+
+        module(name) {
+            QUMock.moduleName = name;
+        },
+
+        // See: https://api.qunitjs.com/QUnit/test/
+        test(testName, callback) {
+            QUMock.testName = testName;
+            QUMock.assertions.test.module.name = QUMock.moduleName;
+            // Print out the progress and keep it on a single line.
+            console.log(`\u001B[0G${QUMock.moduleName} :: ${testName}\u001B[0K`);
+            callback(QUMock.assertions);
+        },
+    };
+
+    // QUNIT MOCK
+    globalThis.QUnit = QUMock;
+    for (const k in QUMock.assertions) {
+        // Make all methods & properties of QUMock.assertions global.
+        globalThis[k] = QUMock.assertions[k];
     }
-};
-
+    globalThis.test = QUMock.test;
+    // Enable us to pass the name of the module around.
+    // See: QUMock.test(...) and VexFlowTests.runWithParams(...)
+    QUMock.assertions.test = { module: { name: '' } };
+}
 
 /// Parse full fontname like "30pt Bravura,Academico" into:
 ///     { family: ['Bravura', 'Academico'], size: 30 }
