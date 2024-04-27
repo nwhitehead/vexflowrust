@@ -46,7 +46,7 @@ function isEqual(a, b) {
     if (isPlainObject(a) && isPlainObject(b))
         return isSameObject(a, b);
     // Lots of things not supported
-    return false;
+    return isSameObject(a, b);
 }
 function isSameObject(a, b) {
     const keys1 = Object.keys(a).sort();
@@ -89,7 +89,21 @@ const qunitAssert = {
                     return;
                 }
             }
-            console.error(`Unequal: ${a} !== ${b}`);
+            throw new Error(msg);
+        }
+    },
+    notEqual(a, b, msg) {
+        if (a === b) {
+            throw new Error(msg);
+        }
+    },
+    strictEqual(a, b, msg) {
+        if (a !== b) {
+            throw new Error(msg);
+        }
+    },
+    notStrictEqual(a, b, msg) {
+        if (a === b) {
             throw new Error(msg);
         }
     },
@@ -110,6 +124,21 @@ const qunitAssert = {
             caught = e;
         }
         if (caught === null) {
+            throw new Error(msg);
+        }
+    },
+    notOk(condition, msg) {
+        if (condition) {
+            throw new Error(msg);
+        }
+    },
+    deepEqual(a, b, msg) {
+        if (!isEqual(a, b)) {
+            throw new Error(msg);
+        }
+    },
+    notDeepEqual(a, b, msg) {
+        if (isEqual(a, b)) {
             throw new Error(msg);
         }
     }
