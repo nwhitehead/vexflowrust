@@ -1,7 +1,8 @@
 import { VexFlowTests } from '../../vexflow/tests/vexflow_test_helpers.js';
 
-//import * as _ from '../../vexflow/tests/index.js';
-import * as _ from '../../vexflow/tests/factory_tests.js';
+import * as _ from '../../vexflow/tests/index.js';
+//import * as _ from '../../vexflow/tests/font_tests.js';
+//import * as _ from '../../vexflow/tests/accidental_tests.js';
 
 
 console.log(`Running ${VexFlowTests.tests.length} tests`);

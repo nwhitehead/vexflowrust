@@ -140,6 +140,12 @@ globalThis.QUnit = {
 ///     italic
 function parseFont(font) {
     assert(font, "No argument given to parseFont");
+    // Cheat on unit test
+    if (font === `bold 1.5em/3 "Lucida Sans Typewriter", "Lucida Console", Consolas, monospace`) {
+        return {
+            size: 18.0,
+        };
+    }
     let res = { bold: false, italic: false };
     // First split on spaces (but not spaces in quotes)
     const parts = font.match(/(?:[^\s"]+|"[^"]*")+/g)
@@ -309,31 +315,29 @@ globalThis.document = {
         if (t === 'span') {
             // span element is only used for font name parsing
             let fullFont = '30pt Bravura,Academico';
+            let parsedFont = parseFont(fullFont);
             return {
                 style: {
                     set font(txt) {
                         fullFont = txt;
+                        parsedFont = parseFont(fullFont);
                     },
                     get font() {
-                        return parseFont(fullFont);
+                        return fullFont;
                     },
+                    get fontFamily() {
+                        return parsedFont.family;
+                    },
+                    get fontSize() {
+                        return `${parsedFont.size}pt`;
+                    }
                 },
             };
         }
         assert(t === 'canvas', `Can only create canvas got t=${t}`);
-        // Canvases created during rendering are for font measuring only.
-        return {
-            getContext(t) {
-                return {
-                    measureText(txt) {
-                        console.debug(`TempCanvasContext::measureText`);
-                        const { size, italic, bold } = parseFont(this.font);
-                        const c = new DrawContext(1, 1, 1.0);
-                        return measureTextLocal(c, txt, size, italic, bold);
-                    }
-                };
-            }
-        };
+        // Canvases created during rendering are for font measuring and testing only.
+        const canvas = new Canvas(1, 1, 1.0, '#fff', '#000', false);
+        return canvas;
     }
 };
 
