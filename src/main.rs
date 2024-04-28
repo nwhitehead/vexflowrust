@@ -39,7 +39,7 @@ use rquickjs::{
 use std::vec::Vec;
 use tiny_skia::{
     BlendMode, Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint,
-    PremultipliedColorU8, Rect, Stroke, Transform, FilterQuality, Point
+    PremultipliedColorU8, Rect, Stroke, Transform,
 };
 // use std::collections::HashMap;
 
