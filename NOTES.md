@@ -75,17 +75,30 @@ unicode codepoints
     Should use BravuraText, that works in Inkscape.
     Or maybe AcademicoRegular? YES, it looks fine.
 
+    EBGaramond has same glyphs present/absent as Academico (for above).
+
     DECISION
 
-    I have two pieces to this. First is a codepoint remap function. Everything
-    that we render goes through the remap. This lets us remap some codepoints
-    that Bravura and Academico don't have directly into SMUFL equivalents
-    that Bravura does have.
+    Investigated when unicode non-smufl is used, it is always in text
+    context. So decision is to detect SMUFL range and use Bravura in that,
+    use normal font for everything else. Also remap some unicode things
+    to SMUFL if they are not in Academico.
 
-    Second part is a special case function for codepoints to skip in Bravura.
-    Usually we start by looking.
+Darkening/Blurring
 
-
-Darkening
     At zoom=1.0, some font thin lines disappear.
     Maybe fix by darkening antialiasing?
+
+    After investigation, this was caused by subpixel shift in tranform.
+    The font was rendered at integer position with renderer set to offset,
+    then the blip from pixmap to surface was offset again by 0.3 shift.
+    That make things look bad.
+
+    I could fix by supersampling pixmap and turning filterquality up, but
+    that made things sharper and less antialiased. Better fix was turning
+    off global transform offset.
+
+    Implication: if the transform results in text positions that are not
+    integers, then quality is degraded a bit. Maybe should look at transform
+    scale/translation at least to fix this. Not worth fixing for rotations
+    and skews.

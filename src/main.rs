@@ -65,7 +65,7 @@ impl FontLibrary {
             bravura_font: FontVec::try_from_vec(include_bytes!("../fonts/Bravura.otf").to_vec())
                 .expect("Failed to load Bravura.otf embedded font"),
             regular_font: FontVec::try_from_vec(
-                include_bytes!("../fonts/AcademicoRegular.otf").to_vec(),
+                include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf").to_vec(),
             )
             .expect("Failed to load AcademicoRegular.otf embedded font"),
             italic_font: FontVec::try_from_vec(
