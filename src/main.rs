@@ -382,7 +382,7 @@ impl DrawContext {
         let mut surface = Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
             .expect("Could not create new PixMap of requested size");
         surface.fill(clear_style);
-        let transform = Transform::identity().post_translate(-0.3, -0.3);
+        let transform = Transform::identity().post_translate(0.5 / zoom as f32, 0.5 / zoom as f32);
         DrawContext {
             width,
             height,
@@ -813,14 +813,6 @@ impl DrawContext {
         paint.set_color(self.draw_state.fill_style);
         paint.anti_alias = true;
         // Check for negative width/height, normalize
-        let mut nx = x;
-        let mut ny = y;
-        if width < 0.0 {
-            nx += width;
-        }
-        if height < 0.0 {
-            ny += height;
-        }
         self.surface.fill_rect(
             normalized_rect(
                 x * self.zoom,
@@ -941,11 +933,23 @@ fn main() {
         let mut options = EvalOptions::default();
         options.global = false;
         options.strict = true;
-        options.promise = true;
         match ctx.eval_file_with_options::<(), _>("src/unittest.js", options) {
-            Err(Error::Exception) => println!("{}", format_exception(ctx.catch())),
-            Err(e) => println!("Error! {:?}", e),
+            Err(Error::Exception) => {
+                println!("{}", format_exception(ctx.catch()));
+                panic!("Exception error");
+            },
+            Err(e) => {
+                println!("Error! {:?}", e);
+                panic!("Error");
+            },
             Ok(_) => (),
         }
     });
+    // Make sure to keep going until work is actually done
+    while runtime.is_job_pending() {
+        match runtime.execute_pending_job() {
+            Ok(_) => (),
+            Err(e) => println!("Error! {:?}", e),
+        }
+    }
 }

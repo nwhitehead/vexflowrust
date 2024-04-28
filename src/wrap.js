@@ -472,13 +472,8 @@ export class Canvas {
         this.zoom = zoom;
         this.background = parseColor(background);
         this.foreground = parseColor(foreground);
-        this.drawContext = new DrawContext(width, height, this.zoom, /* bg */ '#fff', /* fg */ '#000');
-        // Set opaque page
-        //this.drawContext.clear(this.background.r, this.background.g, this.background.b, this.background.a);
-        this.canvasContext = new CanvasContext(this.drawContext, this.zoom, this);
-        // Set default fill and stroke to foreground color
-        this.canvasContext.fillStyle = foreground;
-        this.canvasContext.strokeStyle = foreground;
+        this.drawContext = new DrawContext(width, height, this.zoom, background, foreground);
+        this.drawContext.canvas = { width: 0, height: 0 };
         // If requested, force all fill and stroke colors to be foreground
         if (forceForeground) {
             // pre-parse color so we don't have to do it for every draw, it's not changing
@@ -487,7 +482,7 @@ export class Canvas {
         }
     }
     getContext() {
-        return this.canvasContext;
+        return this.drawContext;
     }
     // Need to have toDataURL for type detection to pass
     toDataURL() {
