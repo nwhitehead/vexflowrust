@@ -107,3 +107,8 @@ Darkening/Blurring
     scaling up/down a pixmap using a transform, the source pixmap must have
     a clear boundary of pixels around it. Once I added a ring of empty pixels
     everything just worked without any hassles.
+
+Width
+
+    I think the "super uncool" test TextBracket.TextBracketStyles needs better
+    font width measuring.

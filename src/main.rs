@@ -159,6 +159,10 @@ pub struct FontMetrics {
     actual_bounding_box_ascent: f64,
     #[qjs(get, set)]
     actual_bounding_box_descent: f64,
+    #[qjs(get, set)]
+    actual_bounding_box_left: f64,
+    #[qjs(get, set)]
+    actual_bounding_box_right: f64,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -611,12 +615,16 @@ impl DrawContext {
         // If it has a path, get bounds.
         if let Some(g) = scaled_font.outline_glyph(glyph) {
             let bounds = g.px_bounds();
+            // bounds from px_bounds() are negative to positive
+            // Just store positive part in FontMetrics.
             return FontMetrics {
                 width: h_advance as f64,
                 font_bounding_box_ascent: -ascent as f64,
                 font_bounding_box_descent: descent as f64,
                 actual_bounding_box_ascent: -bounds.min.y as f64,
                 actual_bounding_box_descent: bounds.max.y as f64,
+                actual_bounding_box_left: -bounds.min.x as f64,
+                actual_bounding_box_right: bounds.max.x as f64,
             };
         }
         // No path, return what we can from font info.
@@ -626,6 +634,8 @@ impl DrawContext {
             font_bounding_box_descent: descent as f64,
             actual_bounding_box_ascent: 0.0,
             actual_bounding_box_descent: 0.0,
+            actual_bounding_box_left: 0.0,
+            actual_bounding_box_right: 0.0,
         };
     }
 
@@ -639,7 +649,11 @@ impl DrawContext {
             for ch in string_iter {
                 let extra_codepoint = ch as u32;
                 let extra_metrics = self.measure_char(extra_codepoint);
+                // Right bounding box is always related to the most recently added glyph.
+                metrics.actual_bounding_box_right = metrics.width + extra_metrics.actual_bounding_box_right;
+                // When sequencing multiple glyphs, we advance by width of each glyph, so just add it
                 metrics.width += extra_metrics.width;
+                // Ascent and Descent box grows to contain the text.
                 metrics.actual_bounding_box_ascent = f64::max(metrics.actual_bounding_box_ascent, extra_metrics.actual_bounding_box_ascent);
                 metrics.actual_bounding_box_descent = f64::max(metrics.actual_bounding_box_descent, extra_metrics.actual_bounding_box_descent);
             }
