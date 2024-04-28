@@ -349,8 +349,6 @@ export class Canvas {
         this.width = width;
         this.height = height;
         this.zoom = zoom;
-        this.background = parseColor(background);
-        this.foreground = parseColor(foreground);
         this.drawContext = new DrawContext(width, height, this.zoom, background, foreground);
         this.drawContext.canvas = { width: 0, height: 0 }
     }
@@ -361,9 +359,6 @@ export class Canvas {
     // Need to have toDataURL for type detection to pass
     toDataURL() {
         return "<URL>";
-    }
-    saveFile(filename) {
-        this.drawContext.savePng(filename);
     }
 }
 
