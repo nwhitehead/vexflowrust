@@ -597,11 +597,13 @@ impl DrawContext {
         if let Some(first) = string_iter.next() {
             let codepoint = first as u32;
             let mut metrics = self.measure_char(codepoint);
-            // Keep going, just updating total width
+            // Keep going, just updating fields that might change with more chars
             for ch in string_iter {
                 let extra_codepoint = ch as u32;
                 let extra_metrics = self.measure_char(extra_codepoint);
                 metrics.width += extra_metrics.width;
+                metrics.actual_bounding_box_ascent = f64::max(metrics.actual_bounding_box_ascent, extra_metrics.actual_bounding_box_ascent);
+                metrics.actual_bounding_box_descent = f64::max(metrics.actual_bounding_box_descent, extra_metrics.actual_bounding_box_descent);
             }
             return metrics;
         }
