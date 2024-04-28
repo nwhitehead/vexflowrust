@@ -65,7 +65,8 @@ impl FontLibrary {
             bravura_font: FontVec::try_from_vec(include_bytes!("../fonts/Bravura.otf").to_vec())
                 .expect("Failed to load Bravura.otf embedded font"),
             regular_font: FontVec::try_from_vec(
-                include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf").to_vec(),
+                //include_bytes!("../fonts/EBGaramond-VariableFont_wght.ttf").to_vec(),
+                include_bytes!("../fonts/AcademicoRegular.otf").to_vec(),
             )
             .expect("Failed to load AcademicoRegular.otf embedded font"),
             italic_font: FontVec::try_from_vec(
@@ -454,7 +455,7 @@ impl DrawContext {
         let mut surface = Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
             .expect("Could not create new PixMap of requested size");
         surface.fill(clear_style);
-        let transform = Transform::identity(); //.post_translate(-0.3 / zoom as f32, -0.3 / zoom as f32);
+        let transform = Transform::identity().post_translate(0.5 / zoom as f32, 0.5 / zoom as f32);
         DrawContext {
             width,
             height,
@@ -720,7 +721,7 @@ impl DrawContext {
                 .clone()
                 .post_scale((1.0 / extra_zoom) as f32, (1.0 / extra_zoom) as f32);
             let mut paint = PixmapPaint::default();
-            paint.quality = FilterQuality::Bicubic;
+            paint.quality = FilterQuality::Nearest;//FilterQuality::Bicubic;
             self.surface.draw_pixmap(
                 x_i + bounds.min.x as i32,
                 y_i + bounds.min.y as i32,
