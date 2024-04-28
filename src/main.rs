@@ -11,6 +11,8 @@
 //
 
 use ab_glyph::{point, Font, FontVec, Glyph, PxScaleFont, ScaleFont};
+use phf::phf_map;
+use regex::Regex;
 use rquickjs::{
     class::Trace,
     context::EvalOptions,
@@ -18,13 +20,11 @@ use rquickjs::{
     loader::{BuiltinLoader, BuiltinResolver, FileResolver, ScriptLoader},
     Class, Context, Ctx, Error, Function, Runtime, Value,
 };
+use std::vec::Vec;
 use tiny_skia::{
     BlendMode, Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint,
     PremultipliedColorU8, Rect, Stroke, Transform,
 };
-use phf::phf_map;
-use regex::Regex;
-use std::vec::Vec;
 
 /// A library of fonts that are ready to use
 pub struct FontLibrary {
@@ -196,7 +196,13 @@ static NAMED_COLORS: phf::Map<&'static str, &'static str> = phf_map! {
 };
 
 fn unparse_color(c: &Color) -> String {
-    return format!("#{:02x}{:02x}{:02x}{:02x}", (c.red() * 255.0) as u8, (c.green() * 255.0) as u8, (c.blue() * 255.0) as u8, (c.alpha() * 255.0) as u8);
+    return format!(
+        "#{:02x}{:02x}{:02x}{:02x}",
+        (c.red() * 255.0) as u8,
+        (c.green() * 255.0) as u8,
+        (c.blue() * 255.0) as u8,
+        (c.alpha() * 255.0) as u8
+    );
 }
 
 fn parse_color(text: &str) -> Option<Color> {
@@ -213,34 +219,60 @@ fn parse_color(text: &str) -> Option<Color> {
         let b = u8::from_str_radix(&captures[3], 16).ok()? * 17;
         return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0);
     }
-    if let Some(captures) = Regex::new(r"^#(.)(.)(.)(.)$").unwrap().captures(current_text) {
+    if let Some(captures) = Regex::new(r"^#(.)(.)(.)(.)$")
+        .unwrap()
+        .captures(current_text)
+    {
         let r = u8::from_str_radix(&captures[1], 16).ok()? * 17;
         let g = u8::from_str_radix(&captures[2], 16).ok()? * 17;
         let b = u8::from_str_radix(&captures[3], 16).ok()? * 17;
         let a = u8::from_str_radix(&captures[4], 16).ok()? * 17;
-        return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, a as f32 / 255.0);
+        return Color::from_rgba(
+            r as f32 / 255.0,
+            g as f32 / 255.0,
+            b as f32 / 255.0,
+            a as f32 / 255.0,
+        );
     }
-    if let Some(captures) = Regex::new(r"^#(..)(..)(..)$").unwrap().captures(current_text) {
+    if let Some(captures) = Regex::new(r"^#(..)(..)(..)$")
+        .unwrap()
+        .captures(current_text)
+    {
         let r = u8::from_str_radix(&captures[1], 16).ok()?;
         let g = u8::from_str_radix(&captures[2], 16).ok()?;
         let b = u8::from_str_radix(&captures[3], 16).ok()?;
         return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0);
     }
-    if let Some(captures) = Regex::new(r"^#(..)(..)(..)(..)$").unwrap().captures(current_text) {
+    if let Some(captures) = Regex::new(r"^#(..)(..)(..)(..)$")
+        .unwrap()
+        .captures(current_text)
+    {
         let r = u8::from_str_radix(&captures[1], 16).ok()?;
         let g = u8::from_str_radix(&captures[2], 16).ok()?;
         let b = u8::from_str_radix(&captures[3], 16).ok()?;
         let a = u8::from_str_radix(&captures[4], 16).ok()?;
-        return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, a as f32 / 255.0);
+        return Color::from_rgba(
+            r as f32 / 255.0,
+            g as f32 / 255.0,
+            b as f32 / 255.0,
+            a as f32 / 255.0,
+        );
     }
-    if let Some(captures) = Regex::new(r"^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$").unwrap().captures(current_text) {
+    if let Some(captures) = Regex::new(r"^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$")
+        .unwrap()
+        .captures(current_text)
+    {
         // Note change to radix 10
         let r = u8::from_str_radix(&captures[1], 10).ok()?;
         let g = u8::from_str_radix(&captures[2], 10).ok()?;
         let b = u8::from_str_radix(&captures[3], 10).ok()?;
         return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0);
     }
-    if let Some(captures) = Regex::new(r"^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*(\.\d*)?)\s*\)$").unwrap().captures(current_text) {
+    if let Some(captures) =
+        Regex::new(r"^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*(\.\d*)?)\s*\)$")
+            .unwrap()
+            .captures(current_text)
+    {
         // Note change to radix 10
         let r = u8::from_str_radix(&captures[1], 10).ok()?;
         let g = u8::from_str_radix(&captures[2], 10).ok()?;
@@ -269,35 +301,63 @@ mod tests {
         assert_eq!(parse_color("#ff0000"), Color::from_rgba(1.0, 0.0, 0.0, 1.0));
         assert_eq!(parse_color("#00ff00"), Color::from_rgba(0.0, 1.0, 0.0, 1.0));
         assert_eq!(parse_color("#0000ff"), Color::from_rgba(0.0, 0.0, 1.0, 1.0));
-        assert_eq!(parse_color("#ff000000"), Color::from_rgba(1.0, 0.0, 0.0, 0.0));
-        assert_eq!(parse_color("#00ff0000"), Color::from_rgba(0.0, 1.0, 0.0, 0.0));
-        assert_eq!(parse_color("#0000ff00"), Color::from_rgba(0.0, 0.0, 1.0, 0.0));
-        assert_eq!(parse_color("#000000ff"), Color::from_rgba(0.0, 0.0, 0.0, 1.0));
-        assert_eq!(parse_color("#800000"), Color::from_rgba((8.0 * 16.0 / 255.0) as f32, 0.0, 0.0, 1.0));
-        assert_eq!(parse_color("rgb(255,0,0)"), Color::from_rgba(1.0, 0.0, 0.0, 1.0));
-        assert_eq!(parse_color("rgba(0,255,0,0.5)"), Color::from_rgba(0.0, 1.0, 0.0, 0.5));
-        assert_eq!(parse_color("rgba(0,255,0,.5)"), Color::from_rgba(0.0, 1.0, 0.0, 0.5));
+        assert_eq!(
+            parse_color("#ff000000"),
+            Color::from_rgba(1.0, 0.0, 0.0, 0.0)
+        );
+        assert_eq!(
+            parse_color("#00ff0000"),
+            Color::from_rgba(0.0, 1.0, 0.0, 0.0)
+        );
+        assert_eq!(
+            parse_color("#0000ff00"),
+            Color::from_rgba(0.0, 0.0, 1.0, 0.0)
+        );
+        assert_eq!(
+            parse_color("#000000ff"),
+            Color::from_rgba(0.0, 0.0, 0.0, 1.0)
+        );
+        assert_eq!(
+            parse_color("#800000"),
+            Color::from_rgba((8.0 * 16.0 / 255.0) as f32, 0.0, 0.0, 1.0)
+        );
+        assert_eq!(
+            parse_color("rgb(255,0,0)"),
+            Color::from_rgba(1.0, 0.0, 0.0, 1.0)
+        );
+        assert_eq!(
+            parse_color("rgba(0,255,0,0.5)"),
+            Color::from_rgba(0.0, 1.0, 0.0, 0.5)
+        );
+        assert_eq!(
+            parse_color("rgba(0,255,0,.5)"),
+            Color::from_rgba(0.0, 1.0, 0.0, 0.5)
+        );
     }
 
     #[test]
     fn test_unparse_color() {
-        assert_eq!(unparse_color(&Color::from_rgba(0.0, 0.0, 0.0, 1.0).unwrap()), "#000000ff");
-        assert_eq!(unparse_color(&Color::from_rgba(80.0 / 255.0, 0.0, 0.0, 80.0 / 255.0).unwrap()), "#50000050");
+        assert_eq!(
+            unparse_color(&Color::from_rgba(0.0, 0.0, 0.0, 1.0).unwrap()),
+            "#000000ff"
+        );
+        assert_eq!(
+            unparse_color(&Color::from_rgba(80.0 / 255.0, 0.0, 0.0, 80.0 / 255.0).unwrap()),
+            "#50000050"
+        );
     }
 }
 
 fn normalized_rect(x: f64, y: f64, width: f64, height: f64) -> Rect {
-    let xx = if width < 0.0 {
-        x + width
-    } else {
-        x
-    };
-    let yy = if height < 0.0 {
-        y + height
-    } else {
-        y
-    };
-    return Rect::from_xywh(xx as f32, yy as f32, width.abs() as f32, height.abs() as f32).unwrap();
+    let xx = if width < 0.0 { x + width } else { x };
+    let yy = if height < 0.0 { y + height } else { y };
+    return Rect::from_xywh(
+        xx as f32,
+        yy as f32,
+        width.abs() as f32,
+        height.abs() as f32,
+    )
+    .unwrap();
 }
 
 #[rquickjs::methods(rename_all = "camelCase")]
@@ -313,11 +373,14 @@ impl DrawContext {
     ///
     #[qjs(constructor)]
     pub fn new(width: u32, height: u32, zoom: f64, background: String, foreground: String) -> Self {
-        let fill_style = parse_color(&foreground).expect("Could not create default fillStyle color");
-        let stroke_style = parse_color(&foreground).expect("Could not create default strokeStyle color");
-        let clear_style = parse_color(&background).expect("Could not create default clearStyle color");
+        let fill_style =
+            parse_color(&foreground).expect("Could not create default fillStyle color");
+        let stroke_style =
+            parse_color(&foreground).expect("Could not create default strokeStyle color");
+        let clear_style =
+            parse_color(&background).expect("Could not create default clearStyle color");
         let mut surface = Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
-        .expect("Could not create new PixMap of requested size");
+            .expect("Could not create new PixMap of requested size");
         surface.fill(clear_style);
         DrawContext {
             width,
@@ -417,14 +480,18 @@ impl DrawContext {
     /// Add a translation to the current transformation
     pub fn translate(&mut self, x: f64, y: f64) {
         self.draw_state.transform = self
-            .draw_state.transform
+            .draw_state
+            .transform
             .post_translate((-x * self.zoom) as f32, (-y * self.zoom) as f32);
     }
 
     /// Add a rotation to the current transformation
     /// Angle is specified in radians.
     pub fn rotate(&mut self, angle: f64) {
-        self.draw_state.transform = self.draw_state.transform.post_rotate(angle.to_degrees() as f32);
+        self.draw_state.transform = self
+            .draw_state
+            .transform
+            .post_rotate(angle.to_degrees() as f32);
     }
 
     /// Measure a single glyph from a codepoint.
@@ -467,7 +534,7 @@ impl DrawContext {
             actual_bounding_box_ascent: 0.0,
             actual_bounding_box_descent: 0.0,
         };
-}
+    }
 
     #[qjs(rename = "measureString")]
     pub fn measure_string(
@@ -559,7 +626,8 @@ impl DrawContext {
                 }
             });
             let descaled_transform = self
-                .draw_state.transform
+                .draw_state
+                .transform
                 .clone()
                 .post_scale((1.0 / extra_zoom) as f32, (1.0 / extra_zoom) as f32);
             self.surface.draw_pixmap(
@@ -575,18 +643,13 @@ impl DrawContext {
     }
 
     /// Draw text string at fixed position with given color.
-    pub fn fill_text(
-        &mut self,
-        txt: String,
-        x: f64,
-        y: f64,
-        size: f64,
-        italic: bool,
-        bold: bool,
-    ) {
+    pub fn fill_text(&mut self, txt: String, x: f64, y: f64, size: f64, italic: bool, bold: bool) {
         let mut x_pos = x;
         // Compute extra_zoom as max of scale factors. Should look good in every situation I think.
-        let extra_zoom = f32::max(self.draw_state.transform.sx.abs(), self.draw_state.transform.sy.abs());
+        let extra_zoom = f32::max(
+            self.draw_state.transform.sx.abs(),
+            self.draw_state.transform.sy.abs(),
+        );
         for ch in txt.chars() {
             let h_advance = self.fill_char(
                 ch as u32,
@@ -704,8 +767,13 @@ impl DrawContext {
         let mut stroke = Stroke::default();
         stroke.width = (self.draw_state.line_width * self.zoom) as f32;
         stroke.line_cap = LineCap::Butt;
-        self.surface
-            .stroke_path(&final_path, &paint, &stroke, self.draw_state.transform, None);
+        self.surface.stroke_path(
+            &final_path,
+            &paint,
+            &stroke,
+            self.draw_state.transform,
+            None,
+        );
     }
 
     pub fn fill(&mut self) {
@@ -729,8 +797,13 @@ impl DrawContext {
             (a * 255.0) as u8,
         );
         paint.anti_alias = true;
-        self.surface
-            .fill_path(&final_path, &paint, FillRule::Winding, self.draw_state.transform, None);
+        self.surface.fill_path(
+            &final_path,
+            &paint,
+            FillRule::Winding,
+            self.draw_state.transform,
+            None,
+        );
     }
 
     /// Draw filled rectangle over image
@@ -762,13 +835,7 @@ impl DrawContext {
 
     /// Set surface to color given, including alpha.
     /// So this can erase canvas, or set to background color.
-    pub fn clear_rect(
-        &mut self,
-        x: f64,
-        y: f64,
-        width: f64,
-        height: f64,
-    ) {
+    pub fn clear_rect(&mut self, x: f64, y: f64, width: f64, height: f64) {
         let mut paint = Paint::default();
         paint.set_color(self.draw_state.clear_style);
         paint.anti_alias = true;
@@ -794,9 +861,7 @@ impl DrawContext {
     }
 
     /// Just for interfacing purposes
-    pub fn set_line_dash(&self) {
-
-    }
+    pub fn set_line_dash(&self) {}
 
     pub fn save(&mut self) {
         self.stack.push(self.draw_state.clone());
@@ -876,9 +941,7 @@ fn main() {
         options.global = false;
         options.strict = true;
         options.promise = true;
-        match ctx.eval_file_with_options::<(), _>(
-            "src/unittest.js", options
-        ) {
+        match ctx.eval_file_with_options::<(), _>("src/unittest.js", options) {
             Err(Error::Exception) => println!("{}", format_exception(ctx.catch())),
             Err(e) => println!("Error! {:?}", e),
             Ok(_) => (),
