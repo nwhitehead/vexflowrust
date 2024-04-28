@@ -191,8 +191,6 @@ pub struct DrawContext {
     width: u32,
     /// Height in pixels of surface
     height: u32,
-    /// Zoom factor, 1.0 is normal, higher is more zoomed in
-    zoom: f64,
     /// Pixel data for image
     #[qjs(skip_trace)]
     surface: Pixmap,
@@ -455,11 +453,10 @@ impl DrawContext {
         let mut surface = Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
             .expect("Could not create new PixMap of requested size");
         surface.fill(clear_style);
-        let transform = Transform::identity().post_translate(0.5 / zoom as f32, 0.5 / zoom as f32);
+        let transform = Transform::identity().post_translate(0.5 / zoom as f32, 0.5 / zoom as f32).post_scale(zoom as f32, zoom as f32);
         DrawContext {
             width,
             height,
-            zoom,
             surface,
             path: None,
             font_library: FontLibrary::new(),
@@ -570,7 +567,7 @@ impl DrawContext {
         self.draw_state.transform = self
             .draw_state
             .transform
-            .post_translate((-x * self.zoom) as f32, (-y * self.zoom) as f32);
+            .post_translate(-x as f32, -y as f32);
     }
 
     /// Add a rotation to the current transformation
@@ -600,7 +597,7 @@ impl DrawContext {
         let mapped_codepoint = self.remap_codepoint(codepoint);
         let (scaled_font, glyph) = self.font_library.lookup_glyph(
             mapped_codepoint,
-            (self.draw_state.font.size * self.zoom) as f32,
+            self.draw_state.font.size as f32,
             self.draw_state.font.italic,
             self.draw_state.font.bold,
             0.0,
@@ -667,7 +664,6 @@ impl DrawContext {
         x: f64,
         y: f64,
         size: f64,
-        zoom: f64,
         extra_zoom: f64,
         italic: bool,
         bold: bool,
@@ -676,7 +672,7 @@ impl DrawContext {
         let g = self.draw_state.fill_style.green() as f64;
         let b = self.draw_state.fill_style.blue() as f64;
         let a = self.draw_state.fill_style.alpha() as f64;
-        let total_zoom = zoom * extra_zoom as f64;
+        let total_zoom = extra_zoom as f64;
         let descaled_transform = self
             .draw_state
             .transform
@@ -752,7 +748,6 @@ impl DrawContext {
                 x_pos,
                 y,
                 self.draw_state.font.size,
-                self.zoom,
                 extra_zoom as f64,
                 self.draw_state.font.italic,
                 self.draw_state.font.bold,
@@ -781,7 +776,7 @@ impl DrawContext {
         self.path
             .as_mut()
             .expect("path must be created")
-            .move_to((x * self.zoom) as f32, (y * self.zoom) as f32);
+            .move_to(x as f32, y as f32);
     }
 
     pub fn line_to(&mut self, x: f64, y: f64) {
@@ -789,7 +784,7 @@ impl DrawContext {
         self.path
             .as_mut()
             .expect("path must be created")
-            .line_to((x * self.zoom) as f32, (y * self.zoom) as f32);
+            .line_to(x as f32, y as f32);
     }
 
     pub fn close_path(&mut self) {
@@ -800,10 +795,10 @@ impl DrawContext {
     pub fn quadratic_curve_to(&mut self, x1: f64, y1: f64, x: f64, y: f64) {
         assert!(self.path.is_some());
         self.path.as_mut().expect("path must be created").quad_to(
-            (x1 * self.zoom) as f32,
-            (y1 * self.zoom) as f32,
-            (x * self.zoom) as f32,
-            (y * self.zoom) as f32,
+            x1 as f32,
+            y1 as f32,
+            x as f32,
+            y as f32,
         );
     }
 
@@ -821,7 +816,7 @@ impl DrawContext {
             self.path
                 .as_mut()
                 .expect("path must be created")
-                .push_circle((x * self.zoom) as f32, (y * self.zoom) as f32, radius as f32);
+                .push_circle(x as f32, y as f32, radius as f32);
         } else {
             println!("Non circle arc encountered, ignoring");
         }
@@ -833,18 +828,18 @@ impl DrawContext {
         self.path
             .as_mut()
             .expect("path must be created")
-            .push_rect(Rect::from_xywh((x * self.zoom) as f32, (y * self.zoom) as f32, (width * self.zoom) as f32, (height * self.zoom) as f32).unwrap());
+            .push_rect(Rect::from_xywh(x as f32, y as f32, width as f32, height as f32).unwrap());
     }
 
     pub fn bezier_curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) {
         assert!(self.path.is_some());
         self.path.as_mut().expect("path must be created").cubic_to(
-            (x1 * self.zoom) as f32,
-            (y1 * self.zoom) as f32,
-            (x2 * self.zoom) as f32,
-            (y2 * self.zoom) as f32,
-            (x * self.zoom) as f32,
-            (y * self.zoom) as f32,
+            x1 as f32,
+            y1 as f32,
+            x2 as f32,
+            y2 as f32,
+            x as f32,
+            y as f32,
         );
     }
 
@@ -861,7 +856,7 @@ impl DrawContext {
         paint.set_color(self.draw_state.stroke_style);
         paint.anti_alias = true;
         let mut stroke = Stroke::default();
-        stroke.width = (self.draw_state.line_width * self.zoom) as f32;
+        stroke.width = self.draw_state.line_width as f32;
         stroke.line_cap = LineCap::Butt;
         self.surface.stroke_path(
             &final_path,
@@ -910,10 +905,10 @@ impl DrawContext {
         // Check for negative width/height, normalize
         self.surface.fill_rect(
             normalized_rect(
-                x * self.zoom,
-                y * self.zoom,
-                width * self.zoom,
-                height * self.zoom,
+                x,
+                y,
+                width,
+                height,
             ),
             &paint,
             self.draw_state.transform,
@@ -930,10 +925,10 @@ impl DrawContext {
         paint.blend_mode = BlendMode::Source;
         self.surface.fill_rect(
             Rect::from_xywh(
-                (x * self.zoom) as f32,
-                (y * self.zoom) as f32,
-                (width * self.zoom) as f32,
-                (height * self.zoom) as f32,
+                x as f32,
+                y as f32,
+                width as f32,
+                height as f32,
             )
             .unwrap(),
             &paint,
