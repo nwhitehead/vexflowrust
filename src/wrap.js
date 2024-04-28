@@ -508,7 +508,7 @@ export class Canvas {
         return "<URL>";
     }
     saveFile(filename) {
-        this.drawContext.save(filename);
+        this.drawContext.savePng(filename);
     }
 }
 

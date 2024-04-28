@@ -24,6 +24,7 @@ use tiny_skia::{
 };
 use phf::phf_map;
 use regex::Regex;
+use std::vec::Vec;
 
 /// A library of fonts that are ready to use
 pub struct FontLibrary {
@@ -135,12 +136,13 @@ pub struct FontMetrics {
 }
 
 /// Drawing state is part of the context
+#[derive(Clone)]
 pub struct DrawState {
     line_width: f64,
     fill_style: Color,
     stroke_style: Color,
     clear_style: Color,
-    font_family: std::vec::Vec<String>,
+    font_family: Vec<String>,
     font_size: f64,
     font_bold: bool,
     font_italic: bool,
@@ -171,6 +173,9 @@ pub struct DrawContext {
     /// Drawing state
     #[qjs(skip_trace)]
     draw_state: DrawState,
+    /// Save/Restore stack
+    #[qjs(skip_trace)]
+    stack: Vec<DrawState>,
 }
 
 static NAMED_COLORS: phf::Map<&'static str, &'static str> = phf_map! {
@@ -332,6 +337,7 @@ impl DrawContext {
                 font_italic: false,
                 transform: Transform::identity(),
             },
+            stack: vec![],
         }
     }
 
@@ -378,7 +384,7 @@ impl DrawContext {
     ///     sx ky tx
     ///     kx sy ty
     ///
-    pub fn get_transform(&mut self) -> std::vec::Vec<f64> {
+    pub fn get_transform(&mut self) -> Vec<f64> {
         return vec![
             self.draw_state.transform.sx as f64,
             self.draw_state.transform.kx as f64,
@@ -392,7 +398,7 @@ impl DrawContext {
     /// Set the current graphical transform.
     ///
     /// Format is vector: [sx, kx, ky, sy, tx, ty]
-    pub fn set_transform(&mut self, t: std::vec::Vec<f64>) {
+    pub fn set_transform(&mut self, t: Vec<f64>) {
         self.draw_state.transform = Transform {
             sx: t[0] as f32,
             kx: t[1] as f32,
@@ -599,7 +605,7 @@ impl DrawContext {
     /// Save image to a file.
     ///
     /// As a convenience, creates parent directories of file if needed.
-    pub fn save(&mut self, filename: String) {
+    pub fn save_png(&mut self, filename: String) {
         let filepath = std::path::Path::new(&filename);
         if let Some(p) = filepath.parent() {
             std::fs::create_dir_all(p).expect("Could not create directory");
@@ -785,6 +791,23 @@ impl DrawContext {
     pub fn clear(&mut self, r: f64, g: f64, b: f64, a: f64) {
         self.surface
             .fill(Color::from_rgba(r as f32, g as f32, b as f32, a as f32).unwrap());
+    }
+
+    /// Just for interfacing purposes
+    pub fn set_line_dash(&self) {
+
+    }
+
+    pub fn save(&mut self) {
+        self.stack.push(self.draw_state.clone());
+    }
+
+    pub fn restore(&mut self) {
+        if let Some(state) = self.stack.pop() {
+            self.draw_state = state;
+        } else {
+            println!("CanvasContext::restore() called with empty stack");
+        }
     }
 }
 
