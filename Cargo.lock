@@ -323,6 +323,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "regex-macro"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12fa36e7add16db296640bba993a65dae2a0088a8e5cd5f935c8bfbd3710145b"
+dependencies = [
+ "once_cell",
+ "regex",
+]
+
+[[package]]
 name = "regex-syntax"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -492,6 +502,7 @@ dependencies = [
  "ab_glyph",
  "phf",
  "regex",
+ "regex-macro",
  "rquickjs",
  "tiny-skia",
 ]

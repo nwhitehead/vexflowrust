@@ -13,6 +13,7 @@
 use ab_glyph::{point, Font, FontVec, Glyph, PxScaleFont, ScaleFont};
 use phf::phf_map;
 use regex::Regex;
+use regex_macro::regex;
 use rquickjs::{
     class::Trace,
     context::EvalOptions,
@@ -138,6 +139,7 @@ pub struct FontMetrics {
 #[derive(Clone)]
 pub struct FontInfo {
     family: Vec<String>,
+    /// Size is measured in pt (and assumed to be 4/3 px which assumes dpi of 72)
     size: f64,
     bold: bool,
     italic: bool,
@@ -210,7 +212,16 @@ fn unparse_color(c: &Color) -> String {
     );
 }
 
-fn parse_font(draw_state: &mut DrawState, font: String) {}
+fn parse_font(font: &str) -> Option<FontInfo> {
+    // First split on spaces (but not spaces in quotes)
+    let re = regex!(r#"(?:[^\s"]+|"[^"]*")+"#);
+    return Some(FontInfo {
+        family: vec![],
+        size: 10.0,
+        italic: false,
+        bold: false,
+    });
+}
 
 fn parse_color(text: &str) -> Option<Color> {
     let mut current_text = text;
@@ -220,16 +231,13 @@ fn parse_color(text: &str) -> Option<Color> {
     }
     // Failure to compile any regex expression is legitimate bug, use unwrap()
     // Any failures in hex parsing propagate to None return value
-    if let Some(captures) = Regex::new(r"^#(.)(.)(.)$").unwrap().captures(current_text) {
+    if let Some(captures) = regex!(r"^#(.)(.)(.)$").captures(current_text) {
         let r = u8::from_str_radix(&captures[1], 16).ok()? * 17;
         let g = u8::from_str_radix(&captures[2], 16).ok()? * 17;
         let b = u8::from_str_radix(&captures[3], 16).ok()? * 17;
         return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0);
     }
-    if let Some(captures) = Regex::new(r"^#(.)(.)(.)(.)$")
-        .unwrap()
-        .captures(current_text)
-    {
+    if let Some(captures) = regex!(r"^#(.)(.)(.)(.)$").captures(current_text) {
         let r = u8::from_str_radix(&captures[1], 16).ok()? * 17;
         let g = u8::from_str_radix(&captures[2], 16).ok()? * 17;
         let b = u8::from_str_radix(&captures[3], 16).ok()? * 17;
@@ -241,19 +249,13 @@ fn parse_color(text: &str) -> Option<Color> {
             a as f32 / 255.0,
         );
     }
-    if let Some(captures) = Regex::new(r"^#(..)(..)(..)$")
-        .unwrap()
-        .captures(current_text)
-    {
+    if let Some(captures) = regex!(r"^#(..)(..)(..)$").captures(current_text) {
         let r = u8::from_str_radix(&captures[1], 16).ok()?;
         let g = u8::from_str_radix(&captures[2], 16).ok()?;
         let b = u8::from_str_radix(&captures[3], 16).ok()?;
         return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0);
     }
-    if let Some(captures) = Regex::new(r"^#(..)(..)(..)(..)$")
-        .unwrap()
-        .captures(current_text)
-    {
+    if let Some(captures) = regex!(r"^#(..)(..)(..)(..)$").captures(current_text) {
         let r = u8::from_str_radix(&captures[1], 16).ok()?;
         let g = u8::from_str_radix(&captures[2], 16).ok()?;
         let b = u8::from_str_radix(&captures[3], 16).ok()?;
@@ -265,9 +267,8 @@ fn parse_color(text: &str) -> Option<Color> {
             a as f32 / 255.0,
         );
     }
-    if let Some(captures) = Regex::new(r"^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$")
-        .unwrap()
-        .captures(current_text)
+    if let Some(captures) =
+        regex!(r"^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$").captures(current_text)
     {
         // Note change to radix 10
         let r = u8::from_str_radix(&captures[1], 10).ok()?;
@@ -276,8 +277,7 @@ fn parse_color(text: &str) -> Option<Color> {
         return Color::from_rgba(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0);
     }
     if let Some(captures) =
-        Regex::new(r"^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*(\.\d*)?)\s*\)$")
-            .unwrap()
+        regex!(r"^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*(\.\d*)?)\s*\)$")
             .captures(current_text)
     {
         // Note change to radix 10
@@ -448,6 +448,18 @@ impl DrawContext {
         return self.draw_state.line_width;
     }
 
+    #[qjs(set, rename = "font")]
+    pub fn set_font(&mut self, font: String) {
+        if let Some(font_info) = parse_font(&font) {
+            self.draw_state.font = font_info;
+        }
+    }
+
+    #[qjs(get, rename = "font")]
+    pub fn get_font(&self) -> String {
+        return "30pt Bravura,Academico".to_string();
+    }
+
     /// Get the current graphical transform.
     ///
     /// Format is vector: [sx, kx, ky, sy, tx, ty]
@@ -507,10 +519,7 @@ impl DrawContext {
     /// Measure a single glyph from a codepoint.
     ///
     /// Return value is scaled to screen pixel units.
-    pub fn measure_char(
-        &mut self,
-        codepoint: u32,
-    ) -> FontMetrics {
+    pub fn measure_char(&mut self, codepoint: u32) -> FontMetrics {
         let (scaled_font, glyph) = self.font_library.lookup_glyph(
             codepoint,
             (self.draw_state.font.size * self.zoom) as f32,
@@ -543,10 +552,7 @@ impl DrawContext {
         };
     }
 
-    pub fn measure_text(
-        &mut self,
-        string: String,
-    ) -> FontMetrics {
+    pub fn measure_text(&mut self, string: String) -> FontMetrics {
         let mut string_iter = string.chars();
         // Get first character metrics
         if let Some(first) = string_iter.next() {
@@ -939,11 +945,11 @@ fn main() {
             Err(Error::Exception) => {
                 println!("{}", format_exception(ctx.catch()));
                 panic!("Exception error");
-            },
+            }
             Err(e) => {
                 println!("Error! {:?}", e);
                 panic!("Error");
-            },
+            }
             Ok(_) => (),
         }
     });

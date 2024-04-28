@@ -4,6 +4,7 @@ Bravura and Academico together don't have:
 
 Bounding box seems a bit small:
     Accidental.Bounding_Box.png
+    I think I need to adjust verticals for string (not just width)
 
 rquickjs
     I want to do "await main()" at toplevel, but I don't get exceptions that way.
