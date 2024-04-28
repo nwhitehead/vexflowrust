@@ -39,7 +39,7 @@ use rquickjs::{
 use std::vec::Vec;
 use tiny_skia::{
     BlendMode, Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint,
-    PremultipliedColorU8, Rect, Stroke, Transform, FilterQuality
+    PremultipliedColorU8, Rect, Stroke, Transform, FilterQuality, Point
 };
 // use std::collections::HashMap;
 
@@ -677,11 +677,17 @@ impl DrawContext {
         let b = self.draw_state.fill_style.blue() as f64;
         let a = self.draw_state.fill_style.alpha() as f64;
         let total_zoom = zoom * extra_zoom as f64;
+        let descaled_transform = self
+            .draw_state
+            .transform
+            .clone()
+            .post_scale((1.0 / extra_zoom) as f32, (1.0 / extra_zoom) as f32);
         let x_real = (x * total_zoom) as f32;
-        let x_i = x_real as i32;
-        let x_frac = x_real - x_i as f32;
         let y_real = (y * total_zoom) as f32;
+        let mut p = Point { x: x_real, y: y_real };
+        let x_i = x_real as i32;
         let y_i = y_real as i32;
+        let x_frac = x_real - x_i as f32;
         let y_frac = y_real - y_i as f32;
         let mapped_codepoint = self.remap_codepoint(codepoint);
         let (scaled_font, glyph) = self.font_library.lookup_glyph(
@@ -715,18 +721,11 @@ impl DrawContext {
                     rg_pixels[(rg_xi + rg_yi * rg_width) as usize] = color;
                 }
             });
-            let descaled_transform = self
-                .draw_state
-                .transform
-                .clone()
-                .post_scale((1.0 / extra_zoom) as f32, (1.0 / extra_zoom) as f32);
-            let mut paint = PixmapPaint::default();
-            paint.quality = FilterQuality::Nearest;//FilterQuality::Bicubic;
             self.surface.draw_pixmap(
                 x_i + bounds.min.x as i32,
                 y_i + bounds.min.y as i32,
                 rendered_glyph.as_ref(),
-                &paint,
+                &PixmapPaint::default(),
                 descaled_transform,
                 None,
             );
