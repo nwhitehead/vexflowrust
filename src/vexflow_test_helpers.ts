@@ -3,6 +3,8 @@
 //
 // VexFlow Test Support Library
 
+// This file is heavily modified from original VexFlow file: tests/vexflow_test_helpers.ts
+
 import { ContextBuilder, Element, Factory, RenderContext, Renderer, VexFlow } from '../src/index';
 
 import { Metrics } from '../src/metrics';

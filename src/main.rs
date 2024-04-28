@@ -3,10 +3,26 @@
 //
 // Recreates canvas CanvasContext2D interface with some limitations.
 //
-// * Only supports fixed font set, built-in to renderer
+// SUPPORTED
+// * Rendering text and music glyphs
+// * Antialiased lines and strokes paths
+// * Antialiased rectangles and fills
+// * Sharp text scaling
+// * Solid colors, alpha blending
+// * Transparent background, erasing background
+// * Italic, bold options for text
+// * Arbitrary affine drawing transformation (rotations etc.), including for text
+// * Quadratic and cubic Bezier paths
+// * Save/Restore drawing state stack
+// * Set font size, fill style, stroke style with CSS style strings
+//
+// NOT SUPPORTED
+// * Only supports fixed font set, built-in to renderer at compile time
 // * Fonts can have italic and bold on/off but not other stuff
 // * arc() can only draw circles
 // * fillStyle and strokeStyle can only be colors (no gradients, dashes, etc.)
+// * no shadows, blurs, filters
+// * Font and color parsing is just enough to work with VexFlow, not general
 // * Probably missing some functions
 //
 
