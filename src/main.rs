@@ -41,7 +41,7 @@ use tiny_skia::{
     BlendMode, Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint,
     PremultipliedColorU8, Rect, Stroke, Transform, FilterQuality
 };
-use std::collections::HashMap;
+// use std::collections::HashMap;
 
 /// A library of fonts that are ready to use
 pub struct FontLibrary {
@@ -55,8 +55,6 @@ pub struct FontLibrary {
     bold_font: FontVec,
     /// Owned font for bold italic text (mostly for completeness)
     bold_italic_font: FontVec,
-    /// Cache that maps codepoints to correct font that has the glyph
-    cache: HashMap<u32, i32>,
 }
 
 impl FontLibrary {
@@ -80,25 +78,12 @@ impl FontLibrary {
                 include_bytes!("../fonts/AcademicoBoldItalic.otf").to_vec(),
             )
             .expect("Failed to load AcademicoBoldItalic.otf embedded font"),
-            cache: HashMap::new(),
         }
     }
 
-    pub fn lookup_glyph_finder(
-        &mut self,
-        codepoint: u32,
-        italic: bool,
-        bold: bool,
-    ) -> i32 {
-        return 0;
-    }
-
-    /// Decide if this codepoint should be looked up as text, not in Bravura
-    /// Only needed for unicode symbols that are in Bravura but don't render nicely as inline text
-    fn skip_bravura_codepoint(codepoint: u32) -> bool {
-        // Skip sharp/natural/flat at \u266d..\u266f
-        // In Bravura these are centered at baseline, screws up inline text like "B♯"
-        return codepoint >= 0x266d && codepoint <= 0x266f;
+    /// Decide if a codepoint is in SMUFL
+    fn is_in_smufl(codepoint: u32) -> bool {
+        return codepoint >= 0xe000 && codepoint <= 0xf8ff;
     }
 
     /// Given a specific codepoint, compute outline glyph
@@ -123,22 +108,18 @@ impl FontLibrary {
         x: f32,
         y: f32,
     ) -> (PxScaleFont<&FontVec>, Glyph) {
-        //let choice = self.cache.entry(codepoint).or_insert_with(|| return 5);
         let ch = char::from_u32(codepoint).expect("Illegal codepoint, is not a char");
-        // First try Bravura
-        // Some codepoints skip Bravura lookup
-        if !Self::skip_bravura_codepoint(codepoint) {
+        // For SMUFL codepoints, use Bravura
+        if Self::is_in_smufl(codepoint) {
             let chosen_font = &self.bravura_font;
             let scale = chosen_font.pt_to_px_scale(size).expect("Illegal font size");
             let glyph = chosen_font
                 .glyph_id(ch)
                 .with_scale_and_position(scale, point(x, y));
                 // See if we have a glyph in Bravura, return it if so
-            if let Some(_) = chosen_font.outline_glyph(glyph.clone()) {
-                return (chosen_font.as_scaled(scale), glyph);
-            }
+            return (chosen_font.as_scaled(scale), glyph);
         }
-        // Next try fallbacks based on italic/bold
+        // For non-SMUFL, lookup right font based on italic/bold
         let chosen_font = if italic {
             if bold {
                 &self.bold_italic_font
@@ -153,10 +134,10 @@ impl FontLibrary {
             }
         };
         let scale = chosen_font.pt_to_px_scale(size).expect("Illegal font size");
-        let glyph2 = chosen_font
+        let glyph = chosen_font
             .glyph_id(ch)
             .with_scale_and_position(scale, point(x, y));
-        return (chosen_font.as_scaled(scale), glyph2);
+        return (chosen_font.as_scaled(scale), glyph);
     }
 }
 
