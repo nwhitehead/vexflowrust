@@ -41,6 +41,7 @@ use tiny_skia::{
     BlendMode, Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint,
     PremultipliedColorU8, Rect, Stroke, Transform,
 };
+use std::collections::HashMap;
 
 /// A library of fonts that are ready to use
 pub struct FontLibrary {
@@ -54,6 +55,8 @@ pub struct FontLibrary {
     bold_font: FontVec,
     /// Owned font for bold italic text (mostly for completeness)
     bold_italic_font: FontVec,
+    /// Cache that maps codepoints to correct font that has the glyph
+    cache: HashMap<u32, i32>,
 }
 
 impl FontLibrary {
@@ -77,7 +80,17 @@ impl FontLibrary {
                 include_bytes!("../fonts/AcademicoBoldItalic.otf").to_vec(),
             )
             .expect("Failed to load AcademicoBoldItalic.otf embedded font"),
+            cache: HashMap::new(),
         }
+    }
+
+    pub fn lookup_glyph_finder(
+        &mut self,
+        codepoint: u32,
+        italic: bool,
+        bold: bool,
+    ) -> i32 {
+        return 0;
     }
 
     /// Given a specific codepoint, compute outline glyph
@@ -94,7 +107,7 @@ impl FontLibrary {
     /// of pixel units.
     ///
     pub fn lookup_glyph(
-        &self,
+        &mut self,
         codepoint: u32,
         size: f32,
         italic: bool,
@@ -102,6 +115,7 @@ impl FontLibrary {
         x: f32,
         y: f32,
     ) -> (PxScaleFont<&FontVec>, Glyph) {
+        //let choice = self.cache.entry(codepoint).or_insert_with(|| return 5);
         let ch = char::from_u32(codepoint).expect("Illegal codepoint, is not a char");
         // First try Bravura
         let chosen_font = &self.bravura_font;
@@ -410,6 +424,7 @@ mod tests {
     }
 }
 
+/// Convert rect xywh coordinates to have positive width and height
 fn normalized_rect(x: f64, y: f64, width: f64, height: f64) -> Rect {
     let xx = if width < 0.0 { x + width } else { x };
     let yy = if height < 0.0 { y + height } else { y };
