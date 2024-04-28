@@ -102,3 +102,8 @@ Darkening/Blurring
     integers, then quality is degraded a bit. Maybe should look at transform
     scale/translation at least to fix this. Not worth fixing for rotations
     and skews.
+
+    UPDATE: I was wrong here. The real issue was boundary for drawing. When
+    scaling up/down a pixmap using a transform, the source pixmap must have
+    a clear boundary of pixels around it. Once I added a ring of empty pixels
+    everything just worked without any hassles.

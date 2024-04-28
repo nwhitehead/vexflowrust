@@ -145,7 +145,7 @@ impl FontLibrary {
 }
 
 /// Metrics to describe one or more glyphs
-/// Attempts to be compatible with browser FontMetrics
+/// Attempts to be compatible with browser TextMetrics
 #[derive(Trace)]
 #[rquickjs::class(rename_all = "camelCase")]
 pub struct FontMetrics {
@@ -453,7 +453,9 @@ impl DrawContext {
         let mut surface = Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
             .expect("Could not create new PixMap of requested size");
         surface.fill(clear_style);
-        let transform = Transform::identity().post_translate(0.5 / zoom as f32, 0.5 / zoom as f32).post_scale(zoom as f32, zoom as f32);
+        let transform = Transform::identity()
+            .post_translate(0.5 / zoom as f32, 0.5 / zoom as f32)
+            .post_scale(zoom as f32, zoom as f32);
         DrawContext {
             width,
             height,
@@ -668,39 +670,39 @@ impl DrawContext {
         italic: bool,
         bold: bool,
     ) -> f64 {
-        let r = self.draw_state.fill_style.red() as f64;
-        let g = self.draw_state.fill_style.green() as f64;
-        let b = self.draw_state.fill_style.blue() as f64;
-        let a = self.draw_state.fill_style.alpha() as f64;
-        let total_zoom = extra_zoom as f64;
         let descaled_transform = self
             .draw_state
             .transform
             .clone()
             .post_scale((1.0 / extra_zoom) as f32, (1.0 / extra_zoom) as f32);
-        let x_real = (x * total_zoom) as f32;
-        let y_real = (y * total_zoom) as f32;
-        let mut p = Point { x: x_real, y: y_real };
-        let x_i = x_real as i32;
-        let y_i = y_real as i32;
-        let x_frac = x_real - x_i as f32;
-        let y_frac = y_real - y_i as f32;
+        let r = self.draw_state.fill_style.red() as f64;
+        let g = self.draw_state.fill_style.green() as f64;
+        let b = self.draw_state.fill_style.blue() as f64;
+        let a = self.draw_state.fill_style.alpha() as f64;
+        let x_real = (x * extra_zoom) as f32;
+        let y_real = (y * extra_zoom) as f32;
+        let x_i = x_real.floor() as i32;
+        let y_i = y_real.floor() as i32;
+        let x_frac = x_real.fract();
+        let y_frac = y_real.fract();
         let mapped_codepoint = self.remap_codepoint(codepoint);
         let (scaled_font, glyph) = self.font_library.lookup_glyph(
             mapped_codepoint,
-            (size * total_zoom) as f32,
+            (size * extra_zoom) as f32,
             italic,
             bold,
             x_frac,
             y_frac,
         );
-        let h_advance = scaled_font.h_advance(glyph.id) as f64 / total_zoom;
+        let h_advance = scaled_font.h_advance(glyph.id) as f64 / extra_zoom;
         if let Some(og) = scaled_font.outline_glyph(glyph) {
             let bounds = og.px_bounds();
+            // Compute size of pixmap for glyph, leaving ring of empty pixels around it.
+            // In worst case, bounds are exact like 0.0--1.0. Then we need actual size 2, with padding on both sides gets to 4.
             let rg_width =
-                (f32::ceil(bounds.max.x) as i32 - f32::floor(bounds.min.x) as i32 + 1) as u32;
+                (f32::ceil(bounds.max.x) as i32 - f32::floor(bounds.min.x) as i32 + 3) as u32;
             let rg_height =
-                (f32::ceil(bounds.max.y) as i32 - f32::floor(bounds.min.y) as i32 + 1) as u32;
+                (f32::ceil(bounds.max.y) as i32 - f32::floor(bounds.min.y) as i32 + 3) as u32;
             let mut rendered_glyph =
                 Pixmap::new(rg_width, rg_height).expect("Could not create PixMap to render glyph");
             let rg_pixels = rendered_glyph.pixels_mut();
@@ -714,7 +716,8 @@ impl DrawContext {
                     (b * true_alpha * 255.0) as u8,
                     (true_alpha * 255.0) as u8,
                 ) {
-                    rg_pixels[(rg_xi + rg_yi * rg_width) as usize] = color;
+                    // Offset by (1, 1) to get ring of transparency for interpolation purposes by draw_pixmap
+                    rg_pixels[(rg_xi + 1 + (rg_yi + 1) * rg_width) as usize] = color;
                 }
             });
             self.surface.draw_pixmap(
