@@ -8,4 +8,5 @@ Bounding box seems a bit small:
 rquickjs
     I want to do "await main()" at toplevel, but I don't get exceptions that way.
     In 0.5.1 I do "main().catch((err)=>...)" then do a loop in rust side.
-    Same thing works in 0.6.0 with promise=false.
+    Same thing works in 0.6.0!
+    What is the best way to do this in rust side? Should be something like std_await

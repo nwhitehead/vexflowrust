@@ -25,6 +25,7 @@ export class HeadlessFactory extends Factory {
       this.context = context;
   }
   saveFile(filename) {
+      console.log('hi');
       this.canvas.saveFile(filename);
   }
 }
@@ -159,7 +160,7 @@ export class VexFlowTests {
         sanitize(QUnit.testName) +
         '.png';
       // Save image
-      Renderer.lastContext.context2D.actualCanvas.saveFile(fileName);
+      Renderer.lastContext.context2D.savePng(fileName);
     }
   }
 

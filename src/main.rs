@@ -135,6 +135,14 @@ pub struct FontMetrics {
     actual_bounding_box_descent: f64,
 }
 
+#[derive(Clone)]
+pub struct FontInfo {
+    family: Vec<String>,
+    size: f64,
+    bold: bool,
+    italic: bool,
+}
+
 /// Drawing state is part of the context
 #[derive(Clone)]
 pub struct DrawState {
@@ -142,10 +150,7 @@ pub struct DrawState {
     fill_style: Color,
     stroke_style: Color,
     clear_style: Color,
-    font_family: Vec<String>,
-    font_size: f64,
-    font_bold: bool,
-    font_italic: bool,
+    font: FontInfo,
     transform: Transform,
 }
 
@@ -204,6 +209,8 @@ fn unparse_color(c: &Color) -> String {
         (c.alpha() * 255.0) as u8
     );
 }
+
+fn parse_font(draw_state: &mut DrawState, font: String) {}
 
 fn parse_color(text: &str) -> Option<Color> {
     let mut current_text = text;
@@ -395,10 +402,12 @@ impl DrawContext {
                 fill_style,
                 stroke_style,
                 clear_style,
-                font_family: vec![],
-                font_size: 30.0,
-                font_bold: false,
-                font_italic: false,
+                font: FontInfo {
+                    family: vec![],
+                    size: 30.0,
+                    bold: false,
+                    italic: false,
+                },
                 transform,
             },
             stack: vec![],
@@ -498,18 +507,15 @@ impl DrawContext {
     /// Measure a single glyph from a codepoint.
     ///
     /// Return value is scaled to screen pixel units.
-    pub fn measure_text(
+    pub fn measure_char(
         &mut self,
         codepoint: u32,
-        size: f64,
-        italic: bool,
-        bold: bool,
     ) -> FontMetrics {
         let (scaled_font, glyph) = self.font_library.lookup_glyph(
             codepoint,
-            (size * self.zoom) as f32,
-            italic,
-            bold,
+            (self.draw_state.font.size * self.zoom) as f32,
+            self.draw_state.font.italic,
+            self.draw_state.font.bold,
             0.0,
             0.0,
         );
@@ -537,30 +543,26 @@ impl DrawContext {
         };
     }
 
-    #[qjs(rename = "measureString")]
-    pub fn measure_string(
+    pub fn measure_text(
         &mut self,
         string: String,
-        size: f64,
-        italic: bool,
-        bold: bool,
     ) -> FontMetrics {
         let mut string_iter = string.chars();
         // Get first character metrics
         if let Some(first) = string_iter.next() {
             let codepoint = first as u32;
-            let mut metrics = self.measure_text(codepoint, size, italic, bold);
+            let mut metrics = self.measure_char(codepoint);
             // Keep going, just updating total width
             for ch in string_iter {
                 let extra_codepoint = ch as u32;
-                let extra_metrics = self.measure_text(extra_codepoint, size, italic, bold);
+                let extra_metrics = self.measure_char(extra_codepoint);
                 metrics.width += extra_metrics.width;
             }
             return metrics;
         }
         // If we get here, we could not get first character
         // Assume we want to measure null character
-        return self.measure_text(0, size, italic, bold);
+        return self.measure_char(0);
     }
 
     /// Draw one codepoint (glyph), return how much to advance in x direction
@@ -644,7 +646,7 @@ impl DrawContext {
     }
 
     /// Draw text string at fixed position with given color.
-    pub fn fill_text(&mut self, txt: String, x: f64, y: f64, size: f64, italic: bool, bold: bool) {
+    pub fn fill_text(&mut self, txt: String, x: f64, y: f64) {
         let mut x_pos = x;
         // Compute extra_zoom as max of scale factors. Should look good in every situation I think.
         let extra_zoom = f32::max(
@@ -656,11 +658,11 @@ impl DrawContext {
                 ch as u32,
                 x_pos,
                 y,
-                size,
+                self.draw_state.font.size,
                 self.zoom,
                 extra_zoom as f64,
-                italic,
-                bold,
+                self.draw_state.font.italic,
+                self.draw_state.font.bold,
             );
             x_pos += h_advance;
         }

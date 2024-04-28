@@ -400,7 +400,7 @@ class CanvasContext {
     measureText(txt) {
         const { size, italic, bold } = parseFont(this.font);
         console.debug(`CanvasContext::measureText ${txt} ${size} ${italic} ${bold}`);
-        return this.ctx.measureString(txt, size, italic, bold);
+        return this.ctx.measureString(txt);
     }
     closePath() {
         console.debug(`CanvasContext::closePath`);
@@ -473,16 +473,19 @@ export class Canvas {
         this.background = parseColor(background);
         this.foreground = parseColor(foreground);
         this.drawContext = new DrawContext(width, height, this.zoom, background, foreground);
-        this.drawContext.canvas = { width: 0, height: 0 };
+        this.drawContext.canvas = { width: 0, height: 0 }
+        //this.canvasContext = new CanvasContext(this.drawContext, zoom, this);
+        //this.canvasContext.canvas = { width: 0, height: 0 }
         // If requested, force all fill and stroke colors to be foreground
-        if (forceForeground) {
-            // pre-parse color so we don't have to do it for every draw, it's not changing
-            this.canvasContext.forceFillStyle = parseColor(foreground);
-            this.canvasContext.forceStrokeStyle = parseColor(foreground);
-        }
+        // if (forceForeground) {
+        //     // pre-parse color so we don't have to do it for every draw, it's not changing
+        //     this.canvasContext.forceFillStyle = parseColor(foreground);
+        //     this.canvasContext.forceStrokeStyle = parseColor(foreground);
+        // }
     }
     getContext() {
         return this.drawContext;
+        //return this.canvasContext;
     }
     // Need to have toDataURL for type detection to pass
     toDataURL() {
