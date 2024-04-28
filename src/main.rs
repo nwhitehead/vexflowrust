@@ -719,6 +719,11 @@ impl DrawContext {
                 descaled_transform,
                 None,
             );
+        } else {
+            if codepoint == 0x20 {
+                return h_advance;
+            }
+            println!(r"*** Codepoint \u{:x}, no glyph found", codepoint);
         }
         return h_advance;
     }
@@ -806,7 +811,7 @@ impl DrawContext {
             self.path
                 .as_mut()
                 .expect("path must be created")
-                .push_circle(x as f32, y as f32, radius as f32);
+                .push_circle((x * self.zoom) as f32, (y * self.zoom) as f32, radius as f32);
         } else {
             println!("Non circle arc encountered, ignoring");
         }
@@ -818,7 +823,7 @@ impl DrawContext {
         self.path
             .as_mut()
             .expect("path must be created")
-            .push_rect(Rect::from_xywh(x as f32, y as f32, width as f32, height as f32).unwrap());
+            .push_rect(Rect::from_xywh((x * self.zoom) as f32, (y * self.zoom) as f32, (width * self.zoom) as f32, (height * self.zoom) as f32).unwrap());
     }
 
     pub fn bezier_curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) {

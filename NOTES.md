@@ -48,4 +48,27 @@ unicode codepoints
     \u00f8 -> \ue871
     \u25b3 -> \ue873
     \u25cb -> \ue870
-    
+
+    Running unit tests with missing glyph reporting, these are missing:
+
+    \ue31a
+    \ue31b
+    \ue3de
+    \ue3df
+
+    Verified they dont' seem to be in latest Bravura.otf
+
+    From glyphs.ts:
+        // U+E31A  Unused
+        accSagittalUnused1 = '\ue31a',
+        // U+E31B  Unused
+        accSagittalUnused2 = '\ue31b',
+        // U+E3DE  Unused
+        accSagittalUnused3 = '\ue3de',
+        // U+E3DF  Unused
+        accSagittalUnused4 = '\ue3df',
+
+
+Darkening
+    At zoom=1.0, some font thin lines disappear.
+     
