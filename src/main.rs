@@ -81,8 +81,10 @@ impl FontLibrary {
         }
     }
 
-    /// Decide if a codepoint is in SMUFL
+    /// Decide if a codepoint is in SMuFL
     fn is_in_smufl(codepoint: u32) -> bool {
+        // Values comes from:
+        // https://www.w3.org/2021/03/smufl14/about/recommended-chars-optional-glyphs.html
         return codepoint >= 0xe000 && codepoint <= 0xf8ff;
     }
 
