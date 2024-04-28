@@ -68,7 +68,24 @@ unicode codepoints
         // U+E3DF  Unused
         accSagittalUnused4 = '\ue3df',
 
+    This affects:
+        TextNote Superscript and Subscript test
+    
+    Also, unicode sharp/natural/flat are only used in text context.
+    Should use BravuraText, that works in Inkscape.
+    Or maybe AcademicoRegular? YES, it looks fine.
+
+    DECISION
+
+    I have two pieces to this. First is a codepoint remap function. Everything
+    that we render goes through the remap. This lets us remap some codepoints
+    that Bravura and Academico don't have directly into SMUFL equivalents
+    that Bravura does have.
+
+    Second part is a special case function for codepoints to skip in Bravura.
+    Usually we start by looking.
+
 
 Darkening
     At zoom=1.0, some font thin lines disappear.
-     
+    Maybe fix by darkening antialiasing?

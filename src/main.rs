@@ -39,7 +39,7 @@ use rquickjs::{
 use std::vec::Vec;
 use tiny_skia::{
     BlendMode, Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint,
-    PremultipliedColorU8, Rect, Stroke, Transform,
+    PremultipliedColorU8, Rect, Stroke, Transform, FilterQuality
 };
 use std::collections::HashMap;
 
@@ -93,6 +93,14 @@ impl FontLibrary {
         return 0;
     }
 
+    /// Decide if this codepoint should be looked up as text, not in Bravura
+    /// Only needed for unicode symbols that are in Bravura but don't render nicely as inline text
+    fn skip_bravura_codepoint(codepoint: u32) -> bool {
+        // Skip sharp/natural/flat at \u266d..\u266f
+        // In Bravura these are centered at baseline, screws up inline text like "B♯"
+        return codepoint >= 0x266d && codepoint <= 0x266f;
+    }
+
     /// Given a specific codepoint, compute outline glyph
     ///
     /// No font family is given here. The FontLibrary takes care of choosing the
@@ -118,13 +126,17 @@ impl FontLibrary {
         //let choice = self.cache.entry(codepoint).or_insert_with(|| return 5);
         let ch = char::from_u32(codepoint).expect("Illegal codepoint, is not a char");
         // First try Bravura
-        let chosen_font = &self.bravura_font;
-        let scale = chosen_font.pt_to_px_scale(size).expect("Illegal font size");
-        let glyph = chosen_font
-            .glyph_id(ch)
-            .with_scale_and_position(scale, point(x, y));
-        if let Some(_) = chosen_font.outline_glyph(glyph.clone()) {
-            return (chosen_font.as_scaled(scale), glyph);
+        // Some codepoints skip Bravura lookup
+        if !Self::skip_bravura_codepoint(codepoint) {
+            let chosen_font = &self.bravura_font;
+            let scale = chosen_font.pt_to_px_scale(size).expect("Illegal font size");
+            let glyph = chosen_font
+                .glyph_id(ch)
+                .with_scale_and_position(scale, point(x, y));
+                // See if we have a glyph in Bravura, return it if so
+            if let Some(_) = chosen_font.outline_glyph(glyph.clone()) {
+                return (chosen_font.as_scaled(scale), glyph);
+            }
         }
         // Next try fallbacks based on italic/bold
         let chosen_font = if italic {
@@ -459,7 +471,7 @@ impl DrawContext {
         let mut surface = Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
             .expect("Could not create new PixMap of requested size");
         surface.fill(clear_style);
-        let transform = Transform::identity().post_translate(0.5 / zoom as f32, 0.5 / zoom as f32);
+        let transform = Transform::identity(); //.post_translate(-0.3 / zoom as f32, -0.3 / zoom as f32);
         DrawContext {
             width,
             height,
@@ -586,12 +598,24 @@ impl DrawContext {
             .post_rotate(angle.to_degrees() as f32);
     }
 
+    /// Remap codepoints to fixup some issues
+    fn remap_codepoint(&self, codepoint: u32) -> u32 {
+        match codepoint {
+            // Map "White Up-Pointing Triangle" to SMUFL "csymMajorSeventh"
+            0x25b3 => 0xe873,
+            // Map "Latin Small Letter O with Stroke" to SMUFL "csymHalfDiminished"
+            0x00f8 => 0xe871,
+            _ => codepoint
+        }
+    }
+
     /// Measure a single glyph from a codepoint.
     ///
     /// Return value is scaled to screen pixel units.
     pub fn measure_char(&mut self, codepoint: u32) -> FontMetrics {
+        let mapped_codepoint = self.remap_codepoint(codepoint);
         let (scaled_font, glyph) = self.font_library.lookup_glyph(
-            codepoint,
+            mapped_codepoint,
             (self.draw_state.font.size * self.zoom) as f32,
             self.draw_state.font.italic,
             self.draw_state.font.bold,
@@ -675,8 +699,9 @@ impl DrawContext {
         let y_real = (y * total_zoom) as f32;
         let y_i = y_real as i32;
         let y_frac = y_real - y_i as f32;
+        let mapped_codepoint = self.remap_codepoint(codepoint);
         let (scaled_font, glyph) = self.font_library.lookup_glyph(
-            codepoint,
+            mapped_codepoint,
             (size * total_zoom) as f32,
             italic,
             bold,
@@ -711,19 +736,21 @@ impl DrawContext {
                 .transform
                 .clone()
                 .post_scale((1.0 / extra_zoom) as f32, (1.0 / extra_zoom) as f32);
+            let mut paint = PixmapPaint::default();
+            paint.quality = FilterQuality::Bicubic;
             self.surface.draw_pixmap(
                 x_i + bounds.min.x as i32,
                 y_i + bounds.min.y as i32,
                 rendered_glyph.as_ref(),
-                &PixmapPaint::default(),
+                &paint,
                 descaled_transform,
                 None,
             );
         } else {
-            if codepoint == 0x20 {
+            if mapped_codepoint == 0x20 {
                 return h_advance;
             }
-            println!(r"*** Codepoint \u{:x}, no glyph found", codepoint);
+            println!(r"*** Codepoint \u{:x}, no glyph found", mapped_codepoint);
         }
         return h_advance;
     }
@@ -732,7 +759,7 @@ impl DrawContext {
     pub fn fill_text(&mut self, txt: String, x: f64, y: f64) {
         let mut x_pos = x;
         // Compute extra_zoom as max of scale factors. Should look good in every situation I think.
-        let extra_zoom = f32::max(
+        let extra_zoom = 1.0 * f32::max(
             self.draw_state.transform.sx.abs(),
             self.draw_state.transform.sy.abs(),
         );

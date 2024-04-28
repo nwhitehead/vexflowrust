@@ -18,7 +18,7 @@ export class HeadlessFactory extends Factory {
       const width = opts.width || 500;
       const height = opts.height || 200;
       super({ renderer: { elementId: null, width, height } });
-      const zoom = opts.zoom || 2.0;
+      const zoom = opts.zoom || 1.0;
       const background = opts.background || '#fff5f0ff';
       const foreground = opts.foreground || '#111';
       const canvas = new Canvas(width, height, zoom, background, foreground, /*forceForeground=*/false);
@@ -27,7 +27,6 @@ export class HeadlessFactory extends Factory {
       this.context = context;
   }
   saveFile(filename) {
-      console.log('hi');
       this.canvas.saveFile(filename);
   }
 }
