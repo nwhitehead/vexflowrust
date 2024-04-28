@@ -12,7 +12,6 @@
 
 use ab_glyph::{point, Font, FontVec, Glyph, PxScaleFont, ScaleFont};
 use phf::phf_map;
-use regex::Regex;
 use regex_macro::regex;
 use rquickjs::{
     class::Trace,
@@ -136,7 +135,7 @@ pub struct FontMetrics {
     actual_bounding_box_descent: f64,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FontInfo {
     family: Vec<String>,
     /// Size is measured in pt (and assumed to be 4/3 px which assumes dpi of 72)
@@ -146,7 +145,7 @@ pub struct FontInfo {
 }
 
 /// Drawing state is part of the context
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DrawState {
     line_width: f64,
     fill_style: Color,
@@ -214,13 +213,31 @@ fn unparse_color(c: &Color) -> String {
 
 fn parse_font(font: &str) -> Option<FontInfo> {
     // First split on spaces (but not spaces in quotes)
-    let re = regex!(r#"(?:[^\s"]+|"[^"]*")+"#);
-    return Some(FontInfo {
+    let mut result = FontInfo {
         family: vec![],
-        size: 10.0,
+        size: 30.0,
         italic: false,
         bold: false,
-    });
+    };
+    let _: Vec<_> = regex!(r#"(?:[^\s"]+|"[^"]*")+"#).find_iter(font).map(|m| {
+        let term = m.as_str();
+        if term == "bold" {
+            result.bold = true;
+        } else if term == "italic" {
+            result.italic = true;
+        } else if let Some(captures) = regex!(r"^(\d+(\.\d*)?)pt").captures(term) {
+            // See if it is a "pt" size (allow decimal)
+            if let Some(value) = captures[1].parse::<f64>().ok() {
+                result.size = value;
+            };
+        } else if let Some(captures) = regex!(r"^(\d+(\.\d*)?)px").captures(term) {
+            // See if it is a "pt" size (allow decimal)
+            if let Some(value) = captures[1].parse::<f64>().ok() {
+                result.size = value * 3.0 / 4.0;
+            };
+        }
+    }).collect();
+    return Some(result);
 }
 
 fn parse_color(text: &str) -> Option<Color> {
@@ -293,6 +310,28 @@ fn parse_color(text: &str) -> Option<Color> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_font() {
+        assert_eq!(parse_font("9pt Academico"), Some(FontInfo {
+            family: vec![],
+            size: 9.0,
+            bold: false,
+            italic: false,
+        }));
+        assert_eq!(parse_font("italic 10.72pt Academico"), Some(FontInfo {
+            family: vec![],
+            size: 10.72,
+            bold: false,
+            italic: true,
+        }));
+        assert_eq!(parse_font("bold 24pt Bravura"), Some(FontInfo {
+            family: vec![],
+            size: 24.0,
+            bold: true,
+            italic: false,
+        }));
+    }
 
     #[test]
     fn test_parse_color() {
