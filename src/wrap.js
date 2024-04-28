@@ -353,10 +353,6 @@ class CanvasContext {
         // Need canvas field to hold final computed scaled width and height
         this.canvas = { width:0, height: 0 };
         this.actualCanvas = canvas;
-        // Global offset for subpixel aliasing issues
-        this.offset = { x:-0.3/zoom, y:-0.3/zoom };
-        // Stack of saved drawing states to pop back
-        this.stack = [];
         // Set default values for state
         this.lineWidth = 1.0;
         this.fillStyle = "#000";
@@ -379,15 +375,15 @@ class CanvasContext {
         const { size, italic, bold } = parseFont(this.font);
         console.debug(`CanvasContext::fillText txt=${txt} x=${x} y=${y} size=${size} this.font=${this.font} this.fillStyle=${this.fillStyle}`);
         this.ctx.fillStyle = this.fillStyle;
-        this.ctx.fillText(txt, x + this.offset.x, y + this.offset.y, size, italic, bold);
+        this.ctx.fillText(txt, x, y, size, italic, bold);
     }
     arc(x, y, radius, startAngle, endAngle, counterclockwise) {
         console.debug(`CanvasContext::arc ${x}, ${y} ${startAngle} ${endAngle} ${counterclockwise}`);
-        this.ctx.arc(x + this.offset.x, y + this.offset.y, radius, startAngle, endAngle, counterclockwise);
+        this.ctx.arc(x, y, radius, startAngle, endAngle, counterclockwise);
     }
     rect(x, y, width, height) {
         console.debug(`CanvasContext::rect ${x}, ${y} ${width}, ${height}`);
-        this.ctx.rect(x + this.offset.x, y + this.offset.y, width, height);
+        this.ctx.rect(x, y, width, height);
     }
     beginPath() {
         console.debug(`CanvasContext::beginPath`);
@@ -395,11 +391,11 @@ class CanvasContext {
     }
     bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y) {
         console.debug(`CanvasContext::bezierCurveTo`);
-        this.ctx.bezierCurveTo(cp1x + this.offset.x, cp1y + this.offset.y, cp2x + this.offset.x, cp2y + this.offset.y, x + this.offset.x, y + this.offset.y);
+        this.ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y);
     }
     quadraticCurveTo(cpx, cpy, x, y) {
         console.debug(`CanvasContext::quadraticCurveTo`);
-        this.ctx.quadraticCurveTo(cpx + this.offset.x, cpy + this.offset.y, x + this.offset.x, y + this.offset.y);
+        this.ctx.quadraticCurveTo(cpx, cpy, x, y);
     }
     measureText(txt) {
         const { size, italic, bold } = parseFont(this.font);
@@ -428,45 +424,35 @@ class CanvasContext {
         this.ctx.fill();
     }
     fillRect(x, y, width, height) {
-        console.debug(`CanvasContext::fillRect ${x + this.offset.x}, ${y + this.offset.y}, ${width}, ${height} fillStyle=${this.fillStyle}`);
+        console.debug(`CanvasContext::fillRect ${x}, ${y}, ${width}, ${height} fillStyle=${this.fillStyle}`);
         this.ctx.fillStyle = this.fillStyle;
-        this.ctx.fillRect(x + this.offset.x, y + this.offset.y, width, height);
+        this.ctx.fillRect(x, y, width, height);
     }
     clearRect(x, y, width, height) {
         console.debug(`CanvasContext::clearRect(${x}, ${y}, ${width}, ${height})`);
-        this.ctx.clearRect(x + this.offset.x, y + this.offset.y, width, height);
+        this.ctx.clearRect(x, y, width, height);
     }
     lineTo(x, y) {
         console.debug(`CanvasContext::lineTo ${x}, ${y}`);
-        this.ctx.lineTo(x + this.offset.x, y + this.offset.y);
+        this.ctx.lineTo(x, y);
     }
     moveTo(x, y) {
         console.debug(`CanvasContext::moveTo ${x}, ${y}`);
-        this.ctx.moveTo(x + this.offset.x, y + this.offset.y);
+        this.ctx.moveTo(x, y);
     }
     restore() {
         console.debug(`CanvasContext::restore`);
-        if (this.stack.length === 0) {
-            console.error('CanvasContext::restore(): Cannot restore drawing state, no saved state in stack.');
-            return;
-        }
-        const state = this.stack.pop();
-        this.font = state.font;
-        this.fillStyle = state.fillStyle;
-        this.strokeStyle = state.strokeStyle;
-        this.lineWidth = state.lineWidth;
-        this.ctx.setTransform(state.transform);
+        this.ctx.restore();
+        this.lineWidth = this.ctx.lineWidth;
+        this.fillStyle = this.ctx.fillStyle;
+        this.strokeStyle = this.ctx.strokeStyle;
     }
     save() {
         console.debug(`CanvasContext::save`);
-        const state = {
-            font: this.font,
-            fillStyle: this.fillStyle,
-            strokeStyle: this.strokeStyle,
-            lineWidth: this.lineWidth,
-            transform: this.ctx.getTransform(),
-        };
-        this.stack.push(state);
+        this.ctx.lineWidth = this.lineWidth;
+        this.ctx.fillStyle = this.fillStyle;
+        this.ctx.strokeStyle = this.strokeStyle;
+        this.ctx.save();
     }
     stroke() {
         console.debug(`CanvasContext::stroke strokeStyle=${this.strokeStyle} lineWidth=${this.lineWidth}`);

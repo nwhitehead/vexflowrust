@@ -382,6 +382,7 @@ impl DrawContext {
         let mut surface = Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
             .expect("Could not create new PixMap of requested size");
         surface.fill(clear_style);
+        let transform = Transform::identity().post_translate(-0.3, -0.3);
         DrawContext {
             width,
             height,
@@ -398,7 +399,7 @@ impl DrawContext {
                 font_size: 30.0,
                 font_bold: false,
                 font_italic: false,
-                transform: Transform::identity(),
+                transform,
             },
             stack: vec![],
         }
