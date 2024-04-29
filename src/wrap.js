@@ -16,10 +16,10 @@ globalThis.console = {
         print(`${anyToString(txt)}\n`);
     },
     warn(txt) {
-        print(`${anyToString(txt)}\n`);
+        print(`\x1b[33m${anyToString(txt)}\x1b[39m\n`);
     },
     error(txt) {
-        print(`${anyToString(txt)}\n`);
+        print(`\x1b[91m${anyToString(txt)}\x1b[39m\n`);
     },
     debug(txt) {
         if (DEBUG) {

@@ -72,7 +72,7 @@ export class VexFlowTests {
     // eslint-disable-next-line
     static runTests(name, testFunc, params) {
         if (QUnit.moduleName === 'Renderer') {
-            console.log(`Skipped Renderer tests`);
+            console.warn(`Skipped Renderer tests`);
             return;
         }
         VexFlowTests.runRustTest(name, testFunc, params);

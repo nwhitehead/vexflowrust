@@ -701,6 +701,11 @@ impl DrawContext {
             0x25b3 => 0xe873,
             // Map "Latin Small Letter O with Stroke" to SMUFL "csymHalfDiminished"
             0x00f8 => 0xe871,
+            // Map missing SMuFL codepoints to space to avoid warnings for known ones
+            0xe31a => 0x20,
+            0xe31b => 0x20,
+            0xe3de => 0x20,
+            0xe3df => 0x20,
             _ => codepoint
         }
     }

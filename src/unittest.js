@@ -4,9 +4,9 @@ import { VexFlowTests } from '../vexflow/tests/vexflow_test_helpers.js';
 import * as __ from '../vexflow/tests/index.js';
 
 async function main() {
-    console.log(`Running ${VexFlowTests.tests.length} tests`);
+    console.log(`Running tests`);
     VexFlowTests.run();
-    console.log(`test result: ${QUnit.passed} tests passed.`);
+    console.log(`test result: \x1b[1m${QUnit.passed}\x1b[0m tests passed.`);
 }
 
 try {
