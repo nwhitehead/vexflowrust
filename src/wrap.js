@@ -34,45 +34,6 @@ globalThis.assert = function(condition, msg) {
     }
 }
 
-// Some helpers for deep equality testing
-function isPlainObject(value) {
-    return value.constructor === Object;
-}
-function isEqual(a, b) {
-    if (Object.is(a, b)) return true;
-    if (typeof a !== typeof b) return false;
-    if (Array.isArray(a) && Array.isArray(b))
-        return isSameArray(a, b);
-    if (isPlainObject(a) && isPlainObject(b))
-        return isSameObject(a, b);
-    // Lots of things not supported
-    return isSameObject(a, b);
-}
-function isSameObject(a, b) {
-    const keys1 = Object.keys(a).sort();
-    const keys2 = Object.keys(b).sort();
-    if (!isEqual(keys1, keys2)) return false;
-    for (const key of keys1) {
-        if (!isEqual(a[key], b[key])) return false;
-    }
-    return true;
-}
-function isSameArray(a, b) {
-    if (a.length !== b.length) return false;
-    return a.every((element, index) => isEqual(element, b[index]));
-}
-
-globalThis.assert_same = function(left, right, msg) {
-    if (!isEqual(left, right)) {
-        throw new Error(`Assertion failed: Different values:
-${'\u2550'.repeat(100)}
-${JSON.stringify(left, null, 2)}
-${'\u2500'.repeat(100)}
-${JSON.stringify(right, null, 2)}
-${'\u2550'.repeat(100)}`);
-    }
-}
-
 // Need to have window object so that we get window.VexFlow
 // Should not need any methods (setTimeout etc.)
 globalThis.window = {};
@@ -140,11 +101,14 @@ globalThis.document = {
                 style: new SpanFontParser(),
             };
         }
-        assert(t === 'canvas', `Can only create canvas got t=${t}`);
-        // Canvases created during rendering are for font measuring and testing only.
-        // So just create dummy canvas.
-        const canvas = new Canvas(1, 1, 1.0, '#fff', '#000', false);
-        return canvas;
+        if (t === 'canvas') {
+            console.debug(`createElement('canvas')`);
+            // Canvases created during rendering are for font measuring and testing only.
+            // So just create dummy canvas.
+            const canvas = new Canvas(1, 1, 1.0, '#fff', '#000', false);
+            return canvas;
+        }
+        throw new Error(`Cannot create element '${t}', not supported`);
     }
 };
 
