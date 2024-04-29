@@ -125,90 +125,6 @@ if (!globalThis.QUnit) {
     QUMock.assertions.test = { module: { name: '' } };
 }
 
-/// Parse full fontname like "30pt Bravura,Academico" into:
-///     { family: ['Bravura', 'Academico'], size: 30 }
-/// This is not full CSS parsing, just enough to get by.
-///
-/// Supports:
-///     family with fallbacks, optional quotes for spaces in family name
-///     size (pt only)
-///     bold
-///     italic
-function parseFont(font) {
-    assert(font, "No argument given to parseFont");
-    // Cheat on unit test
-    if (font === `bold 1.5em/3 "Lucida Sans Typewriter", "Lucida Console", Consolas, monospace`) {
-        return {
-            size: 18.0,
-        };
-    }
-    let res = { bold: false, italic: false };
-    // First split on spaces (but not spaces in quotes)
-    const parts = font.match(/(?:[^\s"]+|"[^"]*")+/g)
-    for (const part of parts) {
-        if (part === 'bold') {
-            res['bold'] = true;
-            continue;
-        }
-        if (part === 'italic') {
-            res['italic'] = true;
-            continue;
-        }
-        const sizeMatch = part.match(/^(\d+(\.\d*)?)pt/);
-        if (sizeMatch) {
-            res['size'] = Number(sizeMatch[1]);
-            continue;
-        }
-        // If we get here, assume is font family maybe with fallbacks
-        let familyParts = part.split(',');
-        // Remove any quotes around family names
-        for (let i = 0; i < familyParts.length; i++) {
-            if (familyParts[i].startsWith('"') && familyParts[i].endsWith('"')) {
-                familyParts[i] = familyParts[i].replaceAll('"', '')
-            }
-        }
-        res['family'] = familyParts;
-    }
-    return res;
-}
-
-assert_same(parseFont('30pt Bravura,Academico'), {
-    family: ['Bravura', 'Academico'],
-    size: 30,
-    bold: false,
-    italic: false,
-});
-assert_same(parseFont('9pt Academico'), {
-    family: ['Academico'],
-    size: 9,
-    bold: false,
-    italic: false,
-});
-assert_same(parseFont('italic 9pt Academico'), {
-    family: ['Academico'],
-    size: 9,
-    italic: true,
-    bold: false,
-});
-assert_same(parseFont('italic 10.72pt Academico'), {
-    family: ['Academico'],
-    size: 10.72,
-    italic: true,
-    bold: false,
-});
-assert_same(parseFont('bold 12pt Lato'), {
-    family: ['Lato'],
-    size: 12,
-    bold: true,
-    italic: false,
-});
-assert_same(parseFont('9pt Academico,"EB Garamond"'), {
-    family: ['Academico', 'EB Garamond'],
-    size: 9,
-    bold: false,
-    italic: false,
-});
-
 globalThis.document = {
     getElementById(id) {
         // Should only get here when testing Factory
@@ -220,25 +136,8 @@ globalThis.document = {
         if (t === 'span') {
             console.debug(`createElement('span')`);
             // span element is only used for font name parsing
-            // Start with default value
-            let fullFont = '30pt Bravura,Academico';
-            let parsedFont = parseFont(fullFont);
             return {
-                style: {
-                    set font(txt) {
-                        fullFont = txt;
-                        parsedFont = parseFont(fullFont);
-                    },
-                    get font() {
-                        return fullFont;
-                    },
-                    get fontFamily() {
-                        return parsedFont.family;
-                    },
-                    get fontSize() {
-                        return `${parsedFont.size}pt`;
-                    }
-                },
+                style: new SpanFontParser(),
             };
         }
         assert(t === 'canvas', `Can only create canvas got t=${t}`);

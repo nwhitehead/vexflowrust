@@ -288,6 +288,14 @@ fn unparse_color(c: &Color) -> String {
     );
 }
 
+/// Parse full fontname like "30pt Bravura,Academico" into FontInfo
+/// This is not full CSS parsing, just enough to get by.
+///
+/// Supports:
+///     family with fallbacks, quotes for spaces in family name
+///     size (pt only)
+///     bold
+///     italic
 fn parse_font(font: &str) -> Option<FontInfo> {
     // First split on spaces (but not spaces in quotes)
     let mut result = FontInfo {
@@ -510,6 +518,7 @@ fn normalized_rect(x: f64, y: f64, width: f64, height: f64) -> Rect {
 
 #[rquickjs::methods(rename_all = "camelCase")]
 impl SpanFontParser {
+    #[qjs(constructor)]
     pub fn new() -> Self {
         SpanFontParser {
             font_info: FontInfo {
