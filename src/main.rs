@@ -1087,7 +1087,7 @@ impl DrawContext {
 
 /// Print to console
 pub fn print(msg: String) {
-    println!("{msg}");
+    print!("{msg}");
 }
 
 fn register_function<'js, F, P>(ctx: Ctx<'js>, name: &str, func: F)

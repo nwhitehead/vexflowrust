@@ -175,10 +175,6 @@ export class VexFlowTests {
     // eslint-disable-next-line
     QUnit.test(name, (assert: any) => {
       const elementId = VexFlowTests.generateTestID(`${testTypeLowerCase}`);
-      const moduleName = assert.test.module.name;
-      const title = moduleName + ' › ' + name + ` › ${testType}`;
-      const prefix = testTypeLowerCase + '_';
-      const titleId = `${prefix}${sanitize(moduleName)}.${sanitize(name)}`;
       const options: TestOptions = { elementId, params, assert, backend };
       testFunc(options, rustContextBuilder);
       if (helper) {

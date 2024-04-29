@@ -6,6 +6,7 @@ import * as __ from '../vexflow/tests/index.js';
 async function main() {
     console.log(`Running ${VexFlowTests.tests.length} tests`);
     VexFlowTests.run();
+    console.log(`test result: ${QUnit.passed} tests passed.`);
 }
 
 try {

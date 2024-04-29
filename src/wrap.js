@@ -13,13 +13,13 @@ function anyToString(v) {
 
 globalThis.console = {
     log(txt) {
-        print(anyToString(txt));
+        print(`${anyToString(txt)}\n`);
     },
     warn(txt) {
-        print(anyToString(txt));
+        print(`${anyToString(txt)}\n`);
     },
     error(txt) {
-        print(anyToString(txt));
+        print(`${anyToString(txt)}\n`);
     },
     debug(txt) {
         if (DEBUG) {
@@ -39,6 +39,7 @@ if (!globalThis.QUnit) {
     const QUMock = {
         moduleName: '',
         testName: '',
+        passed: 0,
 
         assertions: {
             ok: () => true,
@@ -63,8 +64,10 @@ if (!globalThis.QUnit) {
             QUMock.testName = testName;
             QUMock.assertions.test.module.name = QUMock.moduleName;
             // Print out the progress and keep it on a single line.
-            console.log(`\u001B[0G${QUMock.moduleName} :: ${testName}\u001B[0K`);
+            print(`test ${QUMock.moduleName}::${testName} ... `);
             callback(QUMock.assertions);
+            print('\x1b[92mok\x1b[39m\n');
+            QUMock.passed++;
         },
     };
 
