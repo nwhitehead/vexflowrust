@@ -209,113 +209,18 @@ assert_same(parseFont('9pt Academico,"EB Garamond"'), {
     italic: false,
 });
 
-/// Parse color text like "#f0f" to { r: 1, g: 0, b: 1, a: 1 }
-function parseColor(color) {
-    const namedColors = {
-        'none': '#0000',
-        'transparent': '#0000',
-        'black': '#000',
-        'white': '#fff',
-        'red': '#f00',
-        'green': '#0f0',
-        'blue': '#00f',
-        'purple': '#800080',
-        'darkturquoise': '#00ced1',
-        'tomato': '#ff6347',
-        'lawngreen': '#7cfc00',
-        'orange': '#ffa500',
-        'brown': '#a52a2a',
-        'lightgreen': '#90ee90',
-    };
-    if (namedColors[color]) {
-        return parseColor(namedColors[color]);
-    }
-    const shortHex = color.match(/^#(.)(.)(.)$/);
-    if (shortHex) {
-        return {
-            r: parseInt(shortHex[1], 16) * 17 / 255.0,
-            g: parseInt(shortHex[2], 16) * 17 / 255.0,
-            b: parseInt(shortHex[3], 16) * 17 / 255.0,
-            a: 1,
-        }
-    }
-    const shortHexA = color.match(/^#(.)(.)(.)(.)$/);
-    if (shortHexA) {
-        return {
-            r: parseInt(shortHexA[1], 16) * 17 / 255.0,
-            g: parseInt(shortHexA[2], 16) * 17 / 255.0,
-            b: parseInt(shortHexA[3], 16) * 17 / 255.0,
-            a: parseInt(shortHexA[4], 16) * 17 / 255.0,
-        }
-    }
-    const longHex = color.match(/^#(..)(..)(..)$/);
-    if (longHex) {
-        return {
-            r: parseInt(longHex[1], 16) / 255.0,
-            g: parseInt(longHex[2], 16) / 255.0,
-            b: parseInt(longHex[3], 16) / 255.0,
-            a: 1,
-        }
-    }
-    const longHexA = color.match(/^#(..)(..)(..)(..)$/);
-    if (longHexA) {
-        return {
-            r: parseInt(longHexA[1], 16) / 255.0,
-            g: parseInt(longHexA[2], 16) / 255.0,
-            b: parseInt(longHexA[3], 16) / 255.0,
-            a: parseInt(longHexA[4], 16) / 255.0,
-        }
-    }
-    const rgba = color.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),(\d*(\.\d+)?)\)$/);
-    if (rgba) {
-        return {
-            r: parseInt(rgba[1]) / 255.0,
-            g: parseInt(rgba[2]) / 255.0,
-            b: parseInt(rgba[3]) / 255.0,
-            a: Number(rgba[4]),
-        }
-    }
-    const rgb = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-    if (rgb) {
-        return {
-            r: parseInt(rgb[1]) / 255.0,
-            g: parseInt(rgb[2]) / 255.0,
-            b: parseInt(rgb[3]) / 255.0,
-            a: 1,
-        }
-    }
-    throw new Error(`Could not convert color "${color}"`);
-}
-assert_same(parseColor('rgb(100,200,100)'), { r: 100/255, g: 200/255, b: 100/255, a: 1.0 });
-assert_same(parseColor('rgba(100,200,100,0.4)'), { r: 100/255, g: 200/255, b: 100/255, a: 0.4 });
-assert_same(parseColor('none'), { r: 0, g: 0, b: 0, a: 0});
-assert_same(parseColor('red'), { r: 1, g: 0, b: 0, a: 1});
-assert_same(parseColor('#000'), { r: 0, g: 0, b: 0, a: 1});
-assert_same(parseColor('#800'), { r: 136/255, g: 0, b: 0, a: 1});
-assert_same(parseColor('#f00'), { r: 1, g: 0, b: 0, a: 1});
-assert_same(parseColor('#0f0'), { r: 0, g: 1, b: 0, a: 1});
-assert_same(parseColor('#00f'), { r: 0, g: 0, b: 1, a: 1});
-assert_same(parseColor('#0000'), { r: 0, g: 0, b: 0, a: 0});
-assert_same(parseColor('#f000'), { r: 1, g: 0, b: 0, a: 0});
-assert_same(parseColor('#0f00'), { r: 0, g: 1, b: 0, a: 0});
-assert_same(parseColor('#00f0'), { r: 0, g: 0, b: 1, a: 0});
-assert_same(parseColor('#000f'), { r: 0, g: 0, b: 0, a: 1});
-assert_same(parseColor('#000000'), { r: 0, g: 0, b: 0, a: 1});
-assert_same(parseColor('#800000'), { r: 128/255, g: 0, b: 0, a: 1});
-assert_same(parseColor('#008000'), { r: 0, g: 128/255, b: 0, a: 1});
-assert_same(parseColor('#000080'), { r: 0, g: 0, b: 128/255, a: 1});
-
 globalThis.document = {
     getElementById(id) {
         // Should only get here when testing Factory
         console.debug(`getElementById id=${id}`);
         const canvas = new Canvas(500, 400, 1.0, '#fff', '#000', false);
         return canvas;
-        //assert(false, "getElementById called");
     },
     createElement(t) {
         if (t === 'span') {
+            console.debug(`createElement('span')`);
             // span element is only used for font name parsing
+            // Start with default value
             let fullFont = '30pt Bravura,Academico';
             let parsedFont = parseFont(fullFont);
             return {

@@ -174,6 +174,55 @@ pub struct FontInfo {
     italic: bool,
 }
 
+fn unparse_font(info: &FontInfo) -> String {
+    let mut result: String = "".to_string();
+    let mut anything: bool = false;
+    if info.bold {
+        if anything {
+            result.push_str(" ");
+        }
+        result.push_str("bold");
+        anything = true;
+    }
+    if info.italic {
+        if anything {
+            result.push_str(" ");
+        }
+        result.push_str("italic");
+        anything = true;
+    }
+    if anything {
+        result.push_str(" ");
+    }
+    result.push_str(format!("{}pt", info.size).as_str());
+    let mut seen_family = false;
+    if !&info.family.is_empty() {
+        result.push_str(" ");
+    }
+    for fam in &info.family {
+        if seen_family {
+            result.push_str(",");
+        }
+        if fam.as_str().contains(" ") {
+            result.push_str(format!(r#""{}""#, fam).as_str());
+        } else {
+            result.push_str(&fam);
+        }
+        seen_family = true;
+    }
+    return result;
+}
+
+/// A span object that measures fonts
+///
+/// This is how VexFlow does font parsing, makes us do it lol
+#[derive(Trace)]
+#[rquickjs::class]
+pub struct SpanFontParser {
+    #[qjs(skip_trace)]
+    font_info: FontInfo,
+}
+
 /// Drawing state is part of the context
 #[derive(Clone, Debug)]
 pub struct DrawState {
@@ -420,6 +469,30 @@ mod tests {
             "#50000050"
         );
     }
+
+    #[test]
+    fn test_unparse_font() {
+        assert_eq!(
+            unparse_font(&FontInfo { family: vec![], size: 20.0, bold: false, italic: false }),
+            "20pt",
+        );
+        assert_eq!(
+            unparse_font(&FontInfo { family: vec![], size: 20.0, bold: false, italic: true }),
+            "italic 20pt",
+        );
+        assert_eq!(
+            unparse_font(&FontInfo { family: vec![], size: 20.0, bold: true, italic: true }),
+            "bold italic 20pt",
+        );
+        assert_eq!(
+            unparse_font(&FontInfo { family: vec!["Bravura".to_string()], size: 20.0, bold: false, italic: false }),
+            "20pt Bravura",
+        );
+        assert_eq!(
+            unparse_font(&FontInfo { family: vec!["Bravura".to_string(), "Lato Light".to_string()], size: 20.5, bold: false, italic: true }),
+            "italic 20.5pt Bravura,\"Lato Light\"",
+        );
+    }
 }
 
 /// Convert rect xywh coordinates to have positive width and height
@@ -433,6 +506,33 @@ fn normalized_rect(x: f64, y: f64, width: f64, height: f64) -> Rect {
         height.abs() as f32,
     )
     .unwrap();
+}
+
+#[rquickjs::methods(rename_all = "camelCase")]
+impl SpanFontParser {
+    pub fn new() -> Self {
+        SpanFontParser {
+            font_info: FontInfo {
+                family: vec![],
+                size: 30.0,
+                bold: false,
+                italic: false,
+            }
+        }
+    }
+    #[qjs(get, rename = "font")]
+    pub fn get_font(&self) -> String {
+        return unparse_font(&self.font_info);
+    }
+    #[qjs(set, rename = "font")]
+    pub fn set_font(&mut self, font: String) {
+        if let Some(font_info) = parse_font(&font) {
+            self.font_info = font_info;
+            return;
+        }
+        println!("Could not parse font '{}'", &font);
+    }
+
 }
 
 #[rquickjs::methods(rename_all = "camelCase")]
