@@ -1,8 +1,8 @@
 import _ from './src/wrap.js';
 
 import { VexFlowTests } from '../vexflow/tests/vexflow_test_helpers.js';
-//import * as __ from '../vexflow/tests/index.js';
-import * as __ from '../vexflow/tests/accidental_tests.js';
+import * as __ from '../vexflow/tests/index.js';
+//import * as __ from '../vexflow/tests/accidental_tests.js';
 
 async function main() {
     console.log(`Running ${VexFlowTests.tests.length} tests`);

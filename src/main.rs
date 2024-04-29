@@ -1136,6 +1136,7 @@ fn main() {
             .unwrap();
         Class::<DrawContext>::define(&global).unwrap();
         Class::<FontMetrics>::define(&global).unwrap();
+        Class::<SpanFontParser>::define(&global).unwrap();
         register_function(ctx.clone(), "print", print);
         let mut options = EvalOptions::default();
         options.global = false;
