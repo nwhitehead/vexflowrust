@@ -33,7 +33,7 @@ use rquickjs::{
     class::Trace,
     context::EvalOptions,
     function::IntoJsFunc,
-    loader::{BuiltinLoader, BuiltinResolver, FileResolver, ScriptLoader},
+    loader::{BuiltinLoader, BuiltinResolver, FileResolver, Resolver, ScriptLoader},
     Class, Context, Ctx, Error, Function, Runtime, Value,
 };
 use std::vec::Vec;
@@ -1147,12 +1147,51 @@ export const s = "abc";
 export const f = (a, b) => (a + b) * 0.5;
 "#;
 
+pub struct CustomResolver {
+}
+
+impl Default for CustomResolver {
+    fn default() -> Self {
+        Self {}
+    }
+}
+
+use relative_path::{RelativePath, RelativePathBuf};
+
+impl Resolver for CustomResolver {
+    fn resolve<'js>(&mut self, _ctx: &Ctx<'js>, base: &str, name: &str) -> rquickjs::Result<String> {
+        if base == "vexflow_test_helpers" {
+            // To import from fake vexflow_test_helpers.js, do a FileResolver::resolve with fake base.
+            return FileResolver::default().resolve(_ctx, "../vexflow/build/esm/tests/vexflow_test_helpers.js", name);
+        }
+        // Now check if we are importing the vexflow_test_helpers module.
+        // Intercept anything that ends with vexflow_test_helpers to builtin module (absolute address)
+        if name.ends_with("vexflow_test_helpers.js") || name.ends_with("vexflow_test_helpers") {
+            return Ok("vexflow_test_helpers".to_string())
+        } else {
+            return Err(rquickjs::Error::new_resolving(base, name));
+        }
+    }
+}
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let runtime = Runtime::new().expect("Could not create JS Runtime");
     let ctx = Context::full(&runtime).expect("Could not create JS Context");
-    runtime.set_loader((BuiltinResolver::default().with_module("bundle/script_module"), FileResolver::default().with_path("./")), (BuiltinLoader::default().with_module("bundle/script_module", SCRIPT_MODULE), ScriptLoader::default()));
+    let resolver = (
+        BuiltinResolver::default()
+            .with_module("vexflow_test_helpers")
+            .with_module("wrap"),
+        CustomResolver::default(),
+        FileResolver::default(),
+    );
+    let loader = (
+        BuiltinLoader::default()
+            .with_module("vexflow_test_helpers", include_bytes!("./vexflow_test_helpers.js"))
+            .with_module("wrap", include_bytes!("./wrap.js")),
+        ScriptLoader::default(),
+    );
+    runtime.set_loader(resolver, loader);
     ctx.with(|ctx| {
         let global = ctx.globals();
         global
@@ -1165,7 +1204,8 @@ fn main() {
         let mut options = EvalOptions::default();
         options.global = false;
         options.strict = true;
-        match ctx.eval_file_with_options::<(), _>("src/unittest.js", options) {
+        let script = include_bytes!("./unittest.js");
+        match ctx.eval_with_options::<(), _>(script, options) {
             Err(Error::Exception) => {
                 println!("{}", format_exception(ctx.catch()));
                 panic!("Exception error");

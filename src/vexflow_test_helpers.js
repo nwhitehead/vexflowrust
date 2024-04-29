@@ -3,10 +3,10 @@
 //
 // VexFlow Test Support Library
 // This file is heavily modified from original VexFlow file: tests/vexflow_test_helpers.ts
-import { Factory, Renderer } from '../src/index';
+import { Factory, Renderer } from '../src/index.js';
 import { Metrics } from '../src/metrics';
 import { globalObject } from '../src/util';
-import { Canvas } from "../../vexflowrust/src/wrap.js";
+import { Canvas } from "wrap";
 export class HeadlessFactory extends Factory {
     constructor(options) {
         const opts = options || {};

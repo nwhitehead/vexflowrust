@@ -503,6 +503,7 @@ dependencies = [
  "phf",
  "regex",
  "regex-macro",
+ "relative-path",
  "rquickjs",
  "tiny-skia",
 ]
