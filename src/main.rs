@@ -1143,14 +1143,9 @@ fn format_exception(v: Value) -> String {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let resolver = (
-        BuiltinResolver::default(),
-        FileResolver::default().with_path("./"),
-    );
-    let loader = (BuiltinLoader::default(), ScriptLoader::default());
     let runtime = Runtime::new().expect("Could not create JS Runtime");
     let ctx = Context::full(&runtime).expect("Could not create JS Context");
-    runtime.set_loader(resolver, loader);
+    runtime.set_loader(FileResolver::default().with_path("./"), ScriptLoader::default());
     ctx.with(|ctx| {
         let global = ctx.globals();
         global
