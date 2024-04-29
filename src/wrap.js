@@ -28,12 +28,6 @@ globalThis.console = {
     }
 };
 
-globalThis.assert = function(condition, msg) {
-    if (!condition) {
-        throw new Error("Assertion failed: " + msg);
-    }
-}
-
 // Need to have window object so that we get window.VexFlow
 // Should not need any methods (setTimeout etc.)
 globalThis.window = {};
@@ -122,14 +116,11 @@ export class Canvas {
     }
     getContext() {
         return this.drawContext;
-        //return this.canvasContext;
     }
     // Need to have toDataURL for type detection to pass
     toDataURL() {
         return "<URL>";
     }
 }
-
-
 
 export default {};
