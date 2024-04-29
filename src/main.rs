@@ -541,6 +541,14 @@ impl SpanFontParser {
         }
         println!("Could not parse font '{}'", &font);
     }
+    #[qjs(get, rename = "fontSize")]
+    pub fn get_font_size(&self) -> String {
+        return format!("{}pt", self.font_info.size);
+    }
+    #[qjs(set, rename = "fontSize")]
+    pub fn set_font_size(&mut self, size: f64) {
+        self.font_info.size = size;
+    }
 
 }
 
