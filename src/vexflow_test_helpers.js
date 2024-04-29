@@ -22,7 +22,6 @@ export class HeadlessFactory extends Factory {
         this.context = context;
     }
     saveFile(filename) {
-        console.log('hi');
         this.canvas.saveFile(filename);
     }
 }
