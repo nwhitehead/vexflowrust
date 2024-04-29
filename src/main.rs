@@ -1141,11 +1141,18 @@ fn format_exception(v: Value) -> String {
     return format!("Uncaught exception: {:?}", v);
 }
 
+pub const SCRIPT_MODULE: &str = r#"
+export const n = 123;
+export const s = "abc";
+export const f = (a, b) => (a + b) * 0.5;
+"#;
+
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let runtime = Runtime::new().expect("Could not create JS Runtime");
     let ctx = Context::full(&runtime).expect("Could not create JS Context");
-    runtime.set_loader(FileResolver::default().with_path("./"), ScriptLoader::default());
+    runtime.set_loader((BuiltinResolver::default().with_module("bundle/script_module"), FileResolver::default().with_path("./")), (BuiltinLoader::default().with_module("bundle/script_module", SCRIPT_MODULE), ScriptLoader::default()));
     ctx.with(|ctx| {
         let global = ctx.globals();
         global
