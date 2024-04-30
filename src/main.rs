@@ -1164,7 +1164,7 @@ impl Resolver for CustomResolver {
     fn resolve<'js>(&mut self, _ctx: &Ctx<'js>, base: &str, name: &str) -> rquickjs::Result<String> {
         if base == "vexflow_test_helpers" {
             // To import from fake vexflow_test_helpers.js, do a FileResolver::resolve with fake base.
-            return FileResolver::default().resolve(_ctx, "../vexflow/build/esm/tests/vexflow_test_helpers.js", name);
+            return FileResolver::default().resolve(_ctx, "./vexflow/build/esm/tests/vexflow_test_helpers.js", name);
         }
         // Now check if we are importing the vexflow_test_helpers module.
         // Intercept anything that ends with vexflow_test_helpers to builtin module (absolute address)
