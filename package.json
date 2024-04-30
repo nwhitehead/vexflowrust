@@ -1,11 +1,13 @@
 {
   "scripts": {
     "start": "cargo run --release --manifest-path renderer/Cargo.toml --target-dir build -- ./vexflow",
+    "test_vexflow": "cargo run --release --manifest-path renderer/Cargo.toml --target-dir build -- ./node_modules/vxflw-early-access",
     "test": "cargo test --release --manifest-path renderer/Cargo.toml --target-dir build",
-    "tsc": "tsc --target es2020 src/vexflow_test_helpers.ts"
+    "compile_ts": "tsc --target es2020 renderer/src/vexflow_test_helpers.ts"
   },
   "dependencies": {
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vxflw-early-access": "^5.0.0-alpha.0"
   },
   "devDependencies": {
     "esbuild": "0.20.2"

@@ -1176,11 +1176,15 @@ export const s = "abc";
 export const f = (a, b) => (a + b) * 0.5;
 "#;
 
-pub struct CustomResolver {}
+pub struct CustomResolver {
+    vexflow_root: String,
+}
 
 impl Default for CustomResolver {
     fn default() -> Self {
-        Self {}
+        Self {
+            vexflow_root: "./vexflow".to_string(),
+        }
     }
 }
 
@@ -1195,7 +1199,12 @@ impl Resolver for CustomResolver {
             // To import from fake vexflow_test_helpers.js, do a FileResolver::resolve with fake base.
             return FileResolver::default().resolve(
                 _ctx,
-                "./vexflow/build/esm/tests/vexflow_test_helpers.js",
+                &format!(
+                    "{}",
+                    std::path::PathBuf::from(&self.vexflow_root)
+                        .join("build/esm/tests/vexflow_test_helpers.js")
+                        .display()
+                ),
                 name,
             );
         }
@@ -1246,9 +1255,7 @@ fn main() {
     runtime.set_loader(resolver, loader);
     ctx.with(|ctx| {
         let global = ctx.globals();
-        global
-            .set("arg".to_string(), js_args)
-            .unwrap();
+        global.set("arg".to_string(), js_args).unwrap();
         Class::<DrawContext>::define(&global).unwrap();
         Class::<FontMetrics>::define(&global).unwrap();
         Class::<SpanFontParser>::define(&global).unwrap();
