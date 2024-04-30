@@ -1,7 +1,7 @@
 import _ from 'wrap';
 
 import { VexFlowTests } from 'vexflow_test_helpers';
-import * as __ from '../vexflow/build/esm/tests/index.js';
+import * as __ from './vexflow/build/esm/tests/index.js';
 
 async function main() {
     console.log(`Running tests`);

@@ -1,0 +1,21 @@
+accepted = [
+    "Apache-2.0",
+    "MIT",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Unicode-DFS-2016",
+]
+
+[rquickjs.clarify]
+license = "MIT"
+
+[[rquickjs.clarify.files]]
+path = "LICENSE"
+checksum = "0517c7f76916dcc6557b3c0e1c077f14dd05bfe8e0d7d2a2fa298fe0d49a790a"
+
+[regex-macro.clarify]
+license = "MIT"
+
+[[regex-macro.clarify.files]]
+path = "LICENSE-MIT"
+checksum = "f9c4c77baa3828004ee54b8a4f2db2e88ed44a6237a493965bf551fac0fcb62d"
