@@ -5,9 +5,8 @@
 
 // This file is heavily modified from original VexFlow file: tests/vexflow_test_helpers.ts
 
-import { ContextBuilder, Element, Factory, RenderContext, Renderer, VexFlow } from '../src/index';
+import { ContextBuilder, Element, Factory, RenderContext, Renderer } from '../src/index';
 
-import { Metrics } from '../src/metrics';
 import { globalObject } from '../src/util';
 
 import { Canvas } from "wrap";
@@ -190,7 +189,7 @@ export class VexFlowTests {
    */
   static plotLegendForNoteWidth(ctx: RenderContext, x: number, y: number): void {
     ctx.save();
-    ctx.setFont(Metrics.get('fontFamily'), 8);
+    ctx.setFont('Academico', 8);
 
     const spacing = 12;
     let lastY = y;

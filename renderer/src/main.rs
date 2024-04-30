@@ -1180,10 +1180,10 @@ pub struct CustomResolver {
     vexflow_root: String,
 }
 
-impl Default for CustomResolver {
-    fn default() -> Self {
+impl CustomResolver {
+    fn new(path: &str) -> Self {
         Self {
-            vexflow_root: "./vexflow".to_string(),
+            vexflow_root: path.to_string(),
         }
     }
 }
@@ -1197,20 +1197,19 @@ impl Resolver for CustomResolver {
     ) -> rquickjs::Result<String> {
         if base == "vexflow_test_helpers" {
             // To import from fake vexflow_test_helpers.js, do a FileResolver::resolve with fake base.
-            return FileResolver::default().resolve(
-                _ctx,
-                &format!(
-                    "{}",
-                    std::path::PathBuf::from(&self.vexflow_root)
-                        .join("build/esm/tests/vexflow_test_helpers.js")
-                        .display()
-                ),
-                name,
+            let fake_base = format!(
+                "{}",
+                std::path::PathBuf::from(&self.vexflow_root)
+                    .join("build/esm/tests/vexflow_test_helpers.js")
+                    .display()
             );
+            // println!("For imporing {} using faking base: {}", &name, &fake_base);
+            return FileResolver::default().resolve(_ctx, &fake_base, name);
         }
         // Now check if we are importing the vexflow_test_helpers module.
         // Intercept anything that ends with vexflow_test_helpers to builtin module (absolute address)
         if name.ends_with("vexflow_test_helpers.js") || name.ends_with("vexflow_test_helpers") {
+            // println!("Faked out an import from {} of {}", &base, &name);
             return Ok("vexflow_test_helpers".to_string());
         } else {
             return Err(rquickjs::Error::new_resolving(base, name));
@@ -1232,15 +1231,16 @@ fn path_join(path: String, more: String) -> String {
 
 fn main() {
     let args = Cli::parse();
+    let vexflow_location_unicode = format!("{}", args.vexflow_location.display());
     // The .display() part is lossy, non-unicode paths will not pass through.
-    let js_args = vec![format!("{}", args.vexflow_location.display())];
+    let js_args = vec![&vexflow_location_unicode];
     let runtime = Runtime::new().expect("Could not create JS Runtime");
     let ctx = Context::full(&runtime).expect("Could not create JS Context");
     let resolver = (
         BuiltinResolver::default()
             .with_module("vexflow_test_helpers")
             .with_module("wrap"),
-        CustomResolver::default(),
+        CustomResolver::new(&vexflow_location_unicode),
         FileResolver::default(),
     );
     let loader = (
