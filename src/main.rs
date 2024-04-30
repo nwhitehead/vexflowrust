@@ -267,7 +267,7 @@ static NAMED_COLORS: phf::Map<&'static str, &'static str> = phf_map! {
     "black" => "#000",
     "white" => "#fff",
     "red" => "#f00",
-    "green" => "#0f0",
+    "green" => "#008000",
     "blue" => "#00f",
     "purple" => "#800080",
     "darkturquoise" => "#00ced1",
@@ -293,7 +293,7 @@ fn unparse_color(c: &Color) -> String {
 ///
 /// Supports:
 ///     family with fallbacks, quotes for spaces in family name
-///     size (pt only)
+///     size (pt/px)
 ///     bold
 ///     italic
 fn parse_font(font: &str) -> Option<FontInfo> {
@@ -575,8 +575,9 @@ impl DrawContext {
             .expect("Could not create new PixMap of requested size");
         surface.fill(clear_style);
         let transform = Transform::identity()
-            .post_translate(0.5 / zoom as f32, 0.5 / zoom as f32)
             .post_scale(zoom as f32, zoom as f32);
+            // // Optional subpixel translation to make staff lines sharper (but still 2 pixels wide)
+            // .post_translate(0.0 as f32, 0.3 as f32);
         DrawContext {
             width,
             height,
@@ -590,7 +591,7 @@ impl DrawContext {
                 clear_style,
                 font: FontInfo {
                     family: vec![],
-                    size: 30.0,
+                    size: 7.0,
                     bold: false,
                     italic: false,
                 },
@@ -705,10 +706,12 @@ impl DrawContext {
     /// Remap codepoints to fixup some issues
     fn remap_codepoint(&self, codepoint: u32) -> u32 {
         match codepoint {
-            // Map "White Up-Pointing Triangle" to SMUFL "csymMajorSeventh"
+            // Map "White Up-Pointing Triangle" to SMuFL "csymMajorSeventh"
             0x25b3 => 0xe873,
-            // Map "Latin Small Letter O with Stroke" to SMUFL "csymHalfDiminished"
+            // Map "Latin Small Letter O with Stroke" to SMuFL "csymHalfDiminished"
             0x00f8 => 0xe871,
+            // Map "White Circle" to SMuFL "csymDiminished"
+            0x25cb => 0xe870,
             // Map missing SMuFL codepoints to space to avoid warnings for known ones
             0xe31a => 0x20,
             0xe31b => 0x20,
@@ -810,7 +813,8 @@ impl DrawContext {
             .draw_state
             .transform
             .clone()
-            .post_scale((1.0 / extra_zoom) as f32, (1.0 / extra_zoom) as f32);
+            .post_scale((1.0 / extra_zoom) as f32, (1.0 / extra_zoom) as f32)
+            .post_translate(-1.3 as f32, -1.3 as f32);
         let r = self.draw_state.fill_style.red() as f64;
         let g = self.draw_state.fill_style.green() as f64;
         let b = self.draw_state.fill_style.blue() as f64;
@@ -1156,13 +1160,11 @@ impl Default for CustomResolver {
     }
 }
 
-use relative_path::{RelativePath, RelativePathBuf};
-
 impl Resolver for CustomResolver {
     fn resolve<'js>(&mut self, _ctx: &Ctx<'js>, base: &str, name: &str) -> rquickjs::Result<String> {
         if base == "vexflow_test_helpers" {
             // To import from fake vexflow_test_helpers.js, do a FileResolver::resolve with fake base.
-            return FileResolver::default().resolve(_ctx, "../vexflow/build/esm/tests/vexflow_test_helpers.js", name);
+            return FileResolver::default().resolve(_ctx, "../../build/esm/tests/vexflow_test_helpers.js", name);
         }
         // Now check if we are importing the vexflow_test_helpers module.
         // Intercept anything that ends with vexflow_test_helpers to builtin module (absolute address)
