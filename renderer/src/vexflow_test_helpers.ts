@@ -9,7 +9,7 @@ import { ContextBuilder, Element, Factory, RenderContext, Renderer } from '../sr
 
 import { globalObject } from '../src/util';
 
-import { Canvas } from "wrap";
+import { Canvas } from "@wrap";
 
 export class HeadlessFactory extends Factory {
   constructor(options) {

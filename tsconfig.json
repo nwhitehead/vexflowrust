@@ -1,0 +1,7 @@
+{
+    "compilerOptions": {
+        "paths": {
+            "@wrap": ["./renderer/src/wrap.js"],
+        }
+    }
+}

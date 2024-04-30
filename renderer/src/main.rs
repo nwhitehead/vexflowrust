@@ -33,7 +33,7 @@ use rquickjs::{
     class::Trace,
     context::EvalOptions,
     function::IntoJsFunc,
-    loader::{BuiltinLoader, BuiltinResolver, FileResolver, Resolver, ScriptLoader},
+    loader::{BuiltinLoader, BuiltinResolver, FileResolver, ScriptLoader},
     Class, Context, Ctx, Error, Function, Runtime, Value,
 };
 use std::vec::Vec;
@@ -1170,53 +1170,6 @@ fn format_exception(v: Value) -> String {
     return format!("Uncaught exception: {:?}", v);
 }
 
-pub const SCRIPT_MODULE: &str = r#"
-export const n = 123;
-export const s = "abc";
-export const f = (a, b) => (a + b) * 0.5;
-"#;
-
-pub struct CustomResolver {
-    vexflow_root: String,
-}
-
-impl CustomResolver {
-    fn new(path: &str) -> Self {
-        Self {
-            vexflow_root: path.to_string(),
-        }
-    }
-}
-
-impl Resolver for CustomResolver {
-    fn resolve<'js>(
-        &mut self,
-        _ctx: &Ctx<'js>,
-        base: &str,
-        name: &str,
-    ) -> rquickjs::Result<String> {
-        if base == "vexflow_test_helpers" {
-            // To import from fake vexflow_test_helpers.js, do a FileResolver::resolve with fake base.
-            let fake_base = format!(
-                "{}",
-                std::path::PathBuf::from(&self.vexflow_root)
-                    .join("build/esm/tests/vexflow_test_helpers.js")
-                    .display()
-            );
-            // println!("For imporing {} using faking base: {}", &name, &fake_base);
-            return FileResolver::default().resolve(_ctx, &fake_base, name);
-        }
-        // Now check if we are importing the vexflow_test_helpers module.
-        // Intercept anything that ends with vexflow_test_helpers to builtin module (absolute address)
-        if name.ends_with("vexflow_test_helpers.js") || name.ends_with("vexflow_test_helpers") {
-            // println!("Faked out an import from {} of {}", &base, &name);
-            return Ok("vexflow_test_helpers".to_string());
-        } else {
-            return Err(rquickjs::Error::new_resolving(base, name));
-        }
-    }
-}
-
 use clap::Parser;
 
 #[derive(Parser)]
@@ -1238,18 +1191,12 @@ fn main() {
     let ctx = Context::full(&runtime).expect("Could not create JS Context");
     let resolver = (
         BuiltinResolver::default()
-            .with_module("vexflow_test_helpers")
-            .with_module("wrap"),
-        CustomResolver::new(&vexflow_location_unicode),
+            .with_module("@wrap"),
         FileResolver::default(),
     );
     let loader = (
         BuiltinLoader::default()
-            .with_module(
-                "vexflow_test_helpers",
-                include_bytes!("./vexflow_test_helpers.js"),
-            )
-            .with_module("wrap", include_bytes!("./wrap.js")),
+            .with_module("@wrap", include_bytes!("./wrap.js")),
         ScriptLoader::default(),
     );
     runtime.set_loader(resolver, loader);

@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "bundle": "cp renderer/src/vexflow_test_helpers.ts vexflow/tests/vexflow_test_helpers.ts && esbuild vexflow/entry/vexflow-debug-with-tests.ts --tsconfig=tsconfig.json --bundle --format=esm --outfile=build/vexflow-debug-with-tests.js",
     "start": "cargo run --release --manifest-path renderer/Cargo.toml --target-dir build -- ./vexflow",
     "test_vexflow": "cargo run --release --manifest-path renderer/Cargo.toml --target-dir build -- ./node_modules/vxflw-early-access",
     "test": "cargo test --release --manifest-path renderer/Cargo.toml --target-dir build",
