@@ -151,7 +151,7 @@ export class VexFlowTests {
   static runRustTestHelper(): void {
     if (Renderer.lastContext !== undefined) {
       const fileName =
-        'images/rust_' +
+        'build/images/current/rust_' +
         // eslint-disable-next-line
         // @ts-ignore
         sanitize(QUnit.moduleName) +

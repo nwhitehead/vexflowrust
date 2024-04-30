@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "tsc": "tsc --target es2020 src/vexflow_test_helpers.ts"
+  },
   "dependencies": {
     "typescript": "^5.4.5"
   },
