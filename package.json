@@ -1,5 +1,7 @@
 {
   "scripts": {
+    "start": "cargo run --release",
+    "test": "cargo test --release",
     "tsc": "tsc --target es2020 src/vexflow_test_helpers.ts"
   },
   "dependencies": {
