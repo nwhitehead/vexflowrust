@@ -3,7 +3,7 @@
 //
 // VexFlow Test Support Library
 // This file is heavily modified from original VexFlow file: tests/vexflow_test_helpers.ts
-import { Factory, Renderer } from '../src/index.js';
+import { Factory, Renderer } from '../src/index';
 import { Metrics } from '../src/metrics';
 import { globalObject } from '../src/util';
 import { Canvas } from "wrap";
@@ -14,7 +14,7 @@ export class HeadlessFactory extends Factory {
         const height = opts.height || 200;
         super({ renderer: { elementId: null, width, height } });
         const zoom = opts.zoom || 1.0;
-        const background = opts.background || '#fff5f0ff';
+        const background = opts.background || '#00000000'; // Nice paper: '#fff5f0ff';
         const foreground = opts.foreground || '#111';
         const canvas = new Canvas(width, height, zoom, background, foreground, /*forceForeground=*/ false);
         this.canvas = canvas;
@@ -97,7 +97,7 @@ export class VexFlowTests {
      */
     static runRustTestHelper() {
         if (Renderer.lastContext !== undefined) {
-            const fileName = 'images/' +
+            const fileName = 'images/rust_' +
                 // eslint-disable-next-line
                 // @ts-ignore
                 sanitize(QUnit.moduleName) +
@@ -105,7 +105,7 @@ export class VexFlowTests {
                 // eslint-disable-next-line
                 // @ts-ignore
                 sanitize(QUnit.testName) +
-                '.png';
+                '.Bravura.png';
             // Save image
             Renderer.lastContext.context2D.savePng(fileName);
         }

@@ -10,7 +10,7 @@ import { ContextBuilder, Element, Factory, RenderContext, Renderer, VexFlow } fr
 import { Metrics } from '../src/metrics';
 import { globalObject } from '../src/util';
 
-import { Canvas } from "../../vexflowrust/src/wrap.js";
+import { Canvas } from "wrap";
 
 export class HeadlessFactory extends Factory {
   constructor(options) {
@@ -19,7 +19,7 @@ export class HeadlessFactory extends Factory {
       const height = opts.height || 200;
       super({ renderer: { elementId: null, width, height } });
       const zoom = opts.zoom || 1.0;
-      const background = opts.background || '#fff5f0ff';
+      const background = opts.background || '#00000000'; // Nice paper: '#fff5f0ff';
       const foreground = opts.foreground || '#111';
       const canvas = new Canvas(width, height, zoom, background, foreground, /*forceForeground=*/false);
       this.canvas = canvas;
@@ -151,7 +151,7 @@ export class VexFlowTests {
   static runRustTestHelper(): void {
     if (Renderer.lastContext !== undefined) {
       const fileName =
-        'images/' +
+        'images/rust_' +
         // eslint-disable-next-line
         // @ts-ignore
         sanitize(QUnit.moduleName) +
@@ -159,7 +159,7 @@ export class VexFlowTests {
         // eslint-disable-next-line
         // @ts-ignore
         sanitize(QUnit.testName) +
-        '.png';
+        '.Bravura.png';
       // Save image
       Renderer.lastContext.context2D.savePng(fileName);
     }

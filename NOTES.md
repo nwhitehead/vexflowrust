@@ -1,114 +1,163 @@
+# Rust Renderer for VexFlow
 
-Bravura and Academico together don't have:
-    triangle symbol 0x25B3
+## Supported Features and Limitations of Rust renderer
 
-Bounding box seems a bit small:
-    Accidental.Bounding_Box.png
-    I think I need to adjust verticals for string (not just width)
+### Fonts
 
-rquickjs
-    I want to do "await main()" at toplevel, but I don't get exceptions that way.
-    In 0.5.1 I do "main().catch((err)=>...)" then do a loop in rust side.
-    Same thing works in 0.6.0!
-    What is the best way to do this in rust side? Should be something like std_await
+The Rust renderer bundles Bravura and four faces of Academico internally. All
+glyphs are drawn from these fonts. Supporting loading fonts from files and
+searching directories for fonts that match a specification is future work.
 
-unicode codepoints
-    I looked for codepoints in vexflow src/ directory.
+Font details are specified to the renderer through CSS-style "shorthand
+property" strings. The renderer includes a primitive parser for this but the
+parser has many limitations. It only supports `pt` and `px` sizes, no line
+height, only supports `bold` and `italic` (not things like weights or small
+caps). It supports decimal sizes and quotes around font family names.
 
-    grep -r -o -h '\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]' *.ts | sort | uniq
+### Colors
 
-    This is what appears outside of \ueXXX SMUFL range:
+Fill and stroke styles are specified as CSS-style color strings. These are
+parsed by the Rust renderer into RGBA format. Only some formats are supported,
+including:
+* `#hhh` (single hex digit rgb)
+* `#hhhh` (single hex digit rgba)
+* `#hhhhhh` (double hex digit rgb)
+* `#hhhhhhhh` (double hex digit rgba)
+* `rgb()` (numerical rgb)
+* `rgba()` (numerical rgba)
+* named colors (subset of browser named colors, just enough for VexFlow tests)
 
-    Academico:
-    \u00b0  degree
-    \u00f8  o stroke
-    \u25b3  missing
-    \u25cb  missing
-    \u266d  flat
-    \u266e  natural
-    \u266f  sharp
+No gradients, patterns, masking, dashing, blend modes are supported.
 
-    Bravura
-    \u00b0  missing
-    \u00f8  missing
-    \u25b3  missing
-    \u25cb  missing
-    \u266d  flat
-    \u266e  natural
-    \u266f  sharp
+Alpha blending is supported.
 
-    Unicode standard
-    \u25b3 triangle symbol
-    \u25cb halfwidth white circle
+The `clearRect()` method directly sets the drawing surface so can be used
+to erase the surface. The renderer has a clear style for erasing the image.
+This means Tab fingerings are rendered nicely without white rectangles.
 
-    Looks like exactly contents of tables.ts:unicode
+### Shapes
 
-    Why not:
-    \u00b0 -> \ue870
-    \u00f8 -> \ue871
-    \u25b3 -> \ue873
-    \u25cb -> \ue870
+Antialiased stroking and filling of paths is supported.
 
-    Running unit tests with missing glyph reporting, these are missing:
+Paths support:
+* straight lines
+* rectangles
+* quadratic curves
+* cubic curves
+* `arc()` is supported for drawing full circles
 
-    \ue31a
-    \ue31b
-    \ue3de
-    \ue3df
+### Drawing state
 
-    Verified they dont' seem to be in latest Bravura.otf
+Arbitrary affine drawing transformations are supported.
 
-    From glyphs.ts:
-        // U+E31A  Unused
-        accSagittalUnused1 = '\ue31a',
-        // U+E31B  Unused
-        accSagittalUnused2 = '\ue31b',
-        // U+E3DE  Unused
-        accSagittalUnused3 = '\ue3de',
-        // U+E3DF  Unused
-        accSagittalUnused4 = '\ue3df',
+The `save()` and `restore()` methods push and pop drawing state.
 
-    This affects:
-        TextNote Superscript and Subscript test
-    
-    Also, unicode sharp/natural/flat are only used in text context.
-    Should use BravuraText, that works in Inkscape.
-    Or maybe AcademicoRegular? YES, it looks fine.
+Drawing state keeps track of `font`, `fillStyle`, `strokeStyle`,
+and `clearStyle`.
 
-    EBGaramond has same glyphs present/absent as Academico (for above).
+### Text rendering
 
-    DECISION
+Rendering of text strings and music glyphs is supported.
 
-    Investigated when unicode non-smufl is used, it is always in text
-    context. So decision is to detect SMUFL range and use Bravura in that,
-    use normal font for everything else. Also remap some unicode things
-    to SMUFL if they are not in Academico.
+Text is rendered with anti-aliasing and sub-pixel precision.
 
-Darkening/Blurring
+Text glyphs are rendered with arbitrary affine transformation, so rotated text
+works. Scaled text should not be pixelated.
 
-    At zoom=1.0, some font thin lines disappear.
-    Maybe fix by darkening antialiasing?
+Measuring text metrics is supported.
 
-    After investigation, this was caused by subpixel shift in tranform.
-    The font was rendered at integer position with renderer set to offset,
-    then the blip from pixmap to surface was offset again by 0.3 shift.
-    That make things look bad.
+Font to use for glyph is chosen based on codepoint: SMuFL codepoints
+go to Bravura and all others go to Academico.
 
-    I could fix by supersampling pixmap and turning filterquality up, but
-    that made things sharper and less antialiased. Better fix was turning
-    off global transform offset.
+Some codepoints are remapped for better output.
 
-    Implication: if the transform results in text positions that are not
-    integers, then quality is degraded a bit. Maybe should look at transform
-    scale/translation at least to fix this. Not worth fixing for rotations
-    and skews.
+### Other unsupported
 
-    UPDATE: I was wrong here. The real issue was boundary for drawing. When
-    scaling up/down a pixmap using a transform, the source pixmap must have
-    a clear boundary of pixels around it. Once I added a ring of empty pixels
-    everything just worked without any hassles.
+Shadows are not supported.
 
-Width
+Blurs and other filters and effects are not supported.
 
-    I think the "super uncool" test TextBracket.TextBracketStyles needs better
-    font width measuring.
+The Canvas Context2D interface has endless additional capabilities that are not
+implemented.
+
+### Fake DOM
+
+Invoking the Rust renderer involves faking a DOM and hooking into VexFlow.
+Several assumptions are made about what VexFlow will call.
+
+Assumptions during unit testing and rendering:
+* `document.getElementById()` will only be called when testing `Factory` to get a canvas.
+* `document.createElement("span")` is only used for font parsing.
+* `document.createElement("canvas")` is only used for text measurement (no drawing).
+* No other methods are called on `document`.
+* No methods are called on `window`.
+* For `Canvas.getContext()`, the drawing context field `canvas` will only be
+used to store `width` and `height`.
+
+For running the unit tests the Rust code swaps out
+`tests/vexflow_test_helpers.ts` with a local copy that is extensively rewritten.
+
+## VexFlow Issues I found:
+
+### Missing italic, bold-italic
+
+There is no font for italics defined by VexFlow. Some of the tests use italics
+prominently. The italic face doesn't seem to be present in the
+`@vexflow-fonts/academico` package. The Rust renderer uses separate fonts for
+regular, italic, bold, and bold italic for Academico.
+
+Example test that uses different styles:
+
+| Test | Style |
+| ---- | ----- |
+| `EasyScore::Draw Fingerings` | bold |
+| `Annotation::Fingerpicking` | italic |
+| `Beam::Complex Beams with Annotations` | bold italic |
+
+### Missing Unicode glyphs
+
+One missing glyph I found was `\u25B3` "White Up-Pointing Triangle". This
+codepoint was not found in Academico or Bravura. It was not in most other random
+fonts on my system (but was present in some larger fonts). For the Rust renderer
+I remapped this codepoint to SMuFL `\uE873` "csymMajorSeventh" from Bravura
+which is an up-pointing triangle. That seemed to look OK and avoided needing a
+large fallback system font. The baseline also seemed appropriate for the use as
+a chord name symbol.
+
+A similar issue was `\u25CB` "White Circle". This was not present in Academico
+or Bravura and was only sometimes present in system fonts. I remapped this
+codepoint to the SMuFL `\uE870` "csymDiminished". This one wasn't hit in testing
+but turned up in a code search.
+
+The other problem was `\u00F8` "Latin Small Letter O with Stroke". This was used
+in a test to show a half-dimished chord. This symbol was not present in
+Academico or Bravura, but was present in many system fonts. In the Rust renderer
+I remapped this codepoint to SMuFL `\uE871` "csymHalfDiminished". I preferred
+that look.
+
+### Missing SMuFL glyphs
+
+There were several other missing glyphs for codepoints referred to from tests.
+The set was:
+
+    \uE31A "accSagittalUnused1"
+    \uE31B "accSagittalUnused2"
+    \uE3DE "accSagittalUnused3"
+    \uE3DF "accSagittalUnused4"
+
+As of [SMuFL 1.5
+draft](https://w3c.github.io/smufl/latest/tables/spartan-sagittal-multi-shaft-accidentals.html)
+they are currently marked "Unused". The test using them is referring to them as
+unused, so showing nothing is expected for these codepoints. In the Rust
+renderer I mapped these to `\u0020` "Space" to avoid warnings about glyphs not
+found.
+
+### Sub-pixel alignment
+
+This is a personal preference thing. The default sub-pixel alignment used by the
+tests places staff lines between pixels. Anti-aliasing will draw these lines as
+equally gray 2 pixels wide. Shifting the global alignment vertically by 0.5
+pixels makes the lines hit the pixels directly and be drawn 1 pixel wide but
+darker. My preference is a vertical offset by 0.3 pixels which draws staff lines
+as one dark line and one light gray line adjacent. This looks sharper to me
+while still being smooth.
