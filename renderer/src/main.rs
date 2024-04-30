@@ -1217,7 +1217,7 @@ struct Cli {
     vexflow_location: std::path::PathBuf,
 }
 
-fn path_join(path: &str, more: &str) -> String {
+fn path_join(path: String, more: String) -> String {
     return format!("{}", std::path::PathBuf::from(path).join(more).display());
 }
 
@@ -1253,6 +1253,7 @@ fn main() {
         Class::<FontMetrics>::define(&global).unwrap();
         Class::<SpanFontParser>::define(&global).unwrap();
         register_function(ctx.clone(), "print", print);
+        register_function(ctx.clone(), "path_join", path_join);
         let mut options = EvalOptions::default();
         options.global = false;
         options.strict = true;
