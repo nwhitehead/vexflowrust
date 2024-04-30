@@ -1,6 +1,5 @@
 {
   "scripts": {
-    "prebundle": "cp renderer/src/vexflow_test_helpers.ts vexflow/tests/vexflow_test_helpers.ts",
     "bundle": "esbuild vexflow/entry/vexflow-debug-with-tests.ts --tsconfig=tsconfig.json --bundle --log-level=silent --format=esm --outfile=build/vexflow-debug-with-tests.js",
     "bundle_release": "esbuild vexflow/entry/vexflow.ts --tsconfig=tsconfig.json --bundle --minify --log-level=silent --format=esm --outfile=build/vexflow.js",
     "start": "cargo run --release --manifest-path renderer/Cargo.toml --target-dir build --",
@@ -8,5 +7,8 @@
   },
   "devDependencies": {
     "esbuild": "0.20.2"
+  },
+  "dependencies": {
+    "just-install": "^2.0.1"
   }
 }
