@@ -33,7 +33,7 @@ use rquickjs::{
     class::Trace,
     context::EvalOptions,
     function::IntoJsFunc,
-    loader::{BuiltinLoader, BuiltinResolver, FileResolver, ScriptLoader},
+    loader::{BuiltinLoader, BuiltinResolver},
     Class, Context, Ctx, Error, Function, Runtime, Value,
 };
 use std::vec::Vec;
@@ -1174,8 +1174,8 @@ use clap::Parser;
 
 #[derive(Parser)]
 struct Cli {
-    /// Where to look for vexflow
-    vexflow_location: std::path::PathBuf,
+    // /// Where to look for vexflow
+    // vexflow_location: std::path::PathBuf,
 }
 
 fn path_join(path: String, more: String) -> String {
@@ -1184,9 +1184,9 @@ fn path_join(path: String, more: String) -> String {
 
 fn main() {
     let args = Cli::parse();
-    let vexflow_location_unicode = format!("{}", args.vexflow_location.display());
-    // The .display() part is lossy, non-unicode paths will not pass through.
-    let js_args = vec![&vexflow_location_unicode];
+    // let vexflow_location_unicode = format!("{}", args.vexflow_location.display());
+    // // The .display() part is lossy, non-unicode paths will not pass through.
+    // let js_args = vec![&vexflow_location_unicode];
     let runtime = Runtime::new().expect("Could not create JS Runtime");
     let ctx = Context::full(&runtime).expect("Could not create JS Context");
     let resolver = (
@@ -1202,7 +1202,6 @@ fn main() {
     runtime.set_loader(resolver, loader);
     ctx.with(|ctx| {
         let global = ctx.globals();
-        global.set("arg".to_string(), js_args).unwrap();
         Class::<DrawContext>::define(&global).unwrap();
         Class::<FontMetrics>::define(&global).unwrap();
         Class::<SpanFontParser>::define(&global).unwrap();
