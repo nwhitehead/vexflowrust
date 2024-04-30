@@ -1217,9 +1217,13 @@ struct Cli {
     vexflow_location: std::path::PathBuf,
 }
 
+fn path_join(path: &str, more: &str) -> String {
+    return format!("{}", std::path::PathBuf::from(path).join(more).display());
+}
+
 fn main() {
     let args = Cli::parse();
-    // The .display() part is lossy, non-unicode paths will not pass through
+    // The .display() part is lossy, non-unicode paths will not pass through.
     let js_args = vec![format!("{}", args.vexflow_location.display())];
     let runtime = Runtime::new().expect("Could not create JS Runtime");
     let ctx = Context::full(&runtime).expect("Could not create JS Context");
