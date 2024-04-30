@@ -1191,13 +1191,13 @@ fn main() {
     let ctx = Context::full(&runtime).expect("Could not create JS Context");
     let resolver = (
         BuiltinResolver::default()
-            .with_module("@wrap"),
-        FileResolver::default(),
+            .with_module("@wrap")
+            .with_module("@vexflow-debug-with-tests"),
     );
     let loader = (
         BuiltinLoader::default()
-            .with_module("@wrap", include_bytes!("./wrap.js")),
-        ScriptLoader::default(),
+            .with_module("@wrap", include_bytes!("./wrap.js"))
+            .with_module("@vexflow-debug-with-tests", include_bytes!("../../build/vexflow-debug-with-tests.js")),
     );
     runtime.set_loader(resolver, loader);
     ctx.with(|ctx| {
