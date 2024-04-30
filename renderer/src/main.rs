@@ -1209,8 +1209,18 @@ impl Resolver for CustomResolver {
     }
 }
 
+use clap::Parser;
+
+#[derive(Parser)]
+struct Cli {
+    /// Where to look for vexflow
+    vexflow_location: std::path::PathBuf,
+}
+
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
+    let args = Cli::parse();
+    // The .display() part is lossy, non-unicode paths will not pass through
+    let js_args = vec![format!("{}", args.vexflow_location.display())];
     let runtime = Runtime::new().expect("Could not create JS Runtime");
     let ctx = Context::full(&runtime).expect("Could not create JS Context");
     let resolver = (
@@ -1233,7 +1243,7 @@ fn main() {
     ctx.with(|ctx| {
         let global = ctx.globals();
         global
-            .set("arg".to_string(), args[args.len() - 1].clone())
+            .set("arg".to_string(), js_args)
             .unwrap();
         Class::<DrawContext>::define(&global).unwrap();
         Class::<FontMetrics>::define(&global).unwrap();

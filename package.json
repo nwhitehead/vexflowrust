@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "start": "cargo run --release --manifest-path renderer/Cargo.toml --target-dir build",
-    "test": "cargo test --release",
+    "start": "cargo run --release --manifest-path renderer/Cargo.toml --target-dir build -- ./vexflow",
+    "test": "cargo test --release --manifest-path renderer/Cargo.toml --target-dir build",
     "tsc": "tsc --target es2020 src/vexflow_test_helpers.ts"
   },
   "dependencies": {
