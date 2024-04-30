@@ -119,7 +119,7 @@ impl FontLibrary {
             let glyph = chosen_font
                 .glyph_id(ch)
                 .with_scale_and_position(scale, point(x, y));
-                // See if we have a glyph in Bravura, return it if so
+            // See if we have a glyph in Bravura, return it if so
             return (chosen_font.as_scaled(scale), glyph);
         }
         // For non-SMUFL, lookup right font based on italic/bold
@@ -304,24 +304,27 @@ fn parse_font(font: &str) -> Option<FontInfo> {
         italic: false,
         bold: false,
     };
-    let _: Vec<_> = regex!(r#"(?:[^\s"]+|"[^"]*")+"#).find_iter(font).map(|m| {
-        let term = m.as_str();
-        if term == "bold" {
-            result.bold = true;
-        } else if term == "italic" {
-            result.italic = true;
-        } else if let Some(captures) = regex!(r"^(\d+(\.\d*)?)pt").captures(term) {
-            // See if it is a "pt" size (allow decimal)
-            if let Some(value) = captures[1].parse::<f64>().ok() {
-                result.size = value;
-            };
-        } else if let Some(captures) = regex!(r"^(\d+(\.\d*)?)px").captures(term) {
-            // See if it is a "pt" size (allow decimal)
-            if let Some(value) = captures[1].parse::<f64>().ok() {
-                result.size = value * 3.0 / 4.0;
-            };
-        }
-    }).collect();
+    let _: Vec<_> = regex!(r#"(?:[^\s"]+|"[^"]*")+"#)
+        .find_iter(font)
+        .map(|m| {
+            let term = m.as_str();
+            if term == "bold" {
+                result.bold = true;
+            } else if term == "italic" {
+                result.italic = true;
+            } else if let Some(captures) = regex!(r"^(\d+(\.\d*)?)pt").captures(term) {
+                // See if it is a "pt" size (allow decimal)
+                if let Some(value) = captures[1].parse::<f64>().ok() {
+                    result.size = value;
+                };
+            } else if let Some(captures) = regex!(r"^(\d+(\.\d*)?)px").captures(term) {
+                // See if it is a "pt" size (allow decimal)
+                if let Some(value) = captures[1].parse::<f64>().ok() {
+                    result.size = value * 3.0 / 4.0;
+                };
+            }
+        })
+        .collect();
     return Some(result);
 }
 
@@ -398,24 +401,33 @@ mod tests {
 
     #[test]
     fn test_parse_font() {
-        assert_eq!(parse_font("9pt Academico"), Some(FontInfo {
-            family: vec![],
-            size: 9.0,
-            bold: false,
-            italic: false,
-        }));
-        assert_eq!(parse_font("italic 10.72pt Academico"), Some(FontInfo {
-            family: vec![],
-            size: 10.72,
-            bold: false,
-            italic: true,
-        }));
-        assert_eq!(parse_font("bold 24pt Bravura"), Some(FontInfo {
-            family: vec![],
-            size: 24.0,
-            bold: true,
-            italic: false,
-        }));
+        assert_eq!(
+            parse_font("9pt Academico"),
+            Some(FontInfo {
+                family: vec![],
+                size: 9.0,
+                bold: false,
+                italic: false,
+            })
+        );
+        assert_eq!(
+            parse_font("italic 10.72pt Academico"),
+            Some(FontInfo {
+                family: vec![],
+                size: 10.72,
+                bold: false,
+                italic: true,
+            })
+        );
+        assert_eq!(
+            parse_font("bold 24pt Bravura"),
+            Some(FontInfo {
+                family: vec![],
+                size: 24.0,
+                bold: true,
+                italic: false,
+            })
+        );
     }
 
     #[test]
@@ -481,23 +493,48 @@ mod tests {
     #[test]
     fn test_unparse_font() {
         assert_eq!(
-            unparse_font(&FontInfo { family: vec![], size: 20.0, bold: false, italic: false }),
+            unparse_font(&FontInfo {
+                family: vec![],
+                size: 20.0,
+                bold: false,
+                italic: false
+            }),
             "20pt",
         );
         assert_eq!(
-            unparse_font(&FontInfo { family: vec![], size: 20.0, bold: false, italic: true }),
+            unparse_font(&FontInfo {
+                family: vec![],
+                size: 20.0,
+                bold: false,
+                italic: true
+            }),
             "italic 20pt",
         );
         assert_eq!(
-            unparse_font(&FontInfo { family: vec![], size: 20.0, bold: true, italic: true }),
+            unparse_font(&FontInfo {
+                family: vec![],
+                size: 20.0,
+                bold: true,
+                italic: true
+            }),
             "bold italic 20pt",
         );
         assert_eq!(
-            unparse_font(&FontInfo { family: vec!["Bravura".to_string()], size: 20.0, bold: false, italic: false }),
+            unparse_font(&FontInfo {
+                family: vec!["Bravura".to_string()],
+                size: 20.0,
+                bold: false,
+                italic: false
+            }),
             "20pt Bravura",
         );
         assert_eq!(
-            unparse_font(&FontInfo { family: vec!["Bravura".to_string(), "Lato Light".to_string()], size: 20.5, bold: false, italic: true }),
+            unparse_font(&FontInfo {
+                family: vec!["Bravura".to_string(), "Lato Light".to_string()],
+                size: 20.5,
+                bold: false,
+                italic: true
+            }),
             "italic 20.5pt Bravura,\"Lato Light\"",
         );
     }
@@ -526,7 +563,7 @@ impl SpanFontParser {
                 size: 30.0,
                 bold: false,
                 italic: false,
-            }
+            },
         }
     }
     #[qjs(get, rename = "font")]
@@ -549,7 +586,6 @@ impl SpanFontParser {
     pub fn set_font_size(&mut self, size: f64) {
         self.font_info.size = size;
     }
-
 }
 
 #[rquickjs::methods(rename_all = "camelCase")]
@@ -574,10 +610,9 @@ impl DrawContext {
         let mut surface = Pixmap::new((width as f64 * zoom) as u32, (height as f64 * zoom) as u32)
             .expect("Could not create new PixMap of requested size");
         surface.fill(clear_style);
-        let transform = Transform::identity()
-            .post_scale(zoom as f32, zoom as f32);
-            // // Optional subpixel translation to make staff lines sharper (but still 2 pixels wide)
-            // .post_translate(0.0 as f32, 0.3 as f32);
+        let transform = Transform::identity().post_scale(zoom as f32, zoom as f32);
+        // // Optional subpixel translation to make staff lines sharper (but still 2 pixels wide)
+        // .post_translate(0.0 as f32, 0.3 as f32);
         DrawContext {
             width,
             height,
@@ -717,7 +752,7 @@ impl DrawContext {
             0xe31b => 0x20,
             0xe3de => 0x20,
             0xe3df => 0x20,
-            _ => codepoint
+            _ => codepoint,
         }
     }
 
@@ -775,12 +810,19 @@ impl DrawContext {
                 let extra_codepoint = ch as u32;
                 let extra_metrics = self.measure_char(extra_codepoint);
                 // Right bounding box is always related to the most recently added glyph.
-                metrics.actual_bounding_box_right = metrics.width + extra_metrics.actual_bounding_box_right;
+                metrics.actual_bounding_box_right =
+                    metrics.width + extra_metrics.actual_bounding_box_right;
                 // When sequencing multiple glyphs, we advance by width of each glyph, so just add it
                 metrics.width += extra_metrics.width;
                 // Ascent and Descent box grows to contain the text.
-                metrics.actual_bounding_box_ascent = f64::max(metrics.actual_bounding_box_ascent, extra_metrics.actual_bounding_box_ascent);
-                metrics.actual_bounding_box_descent = f64::max(metrics.actual_bounding_box_descent, extra_metrics.actual_bounding_box_descent);
+                metrics.actual_bounding_box_ascent = f64::max(
+                    metrics.actual_bounding_box_ascent,
+                    extra_metrics.actual_bounding_box_ascent,
+                );
+                metrics.actual_bounding_box_descent = f64::max(
+                    metrics.actual_bounding_box_descent,
+                    extra_metrics.actual_bounding_box_descent,
+                );
             }
             return metrics;
         }
@@ -881,10 +923,11 @@ impl DrawContext {
     pub fn fill_text(&mut self, txt: String, x: f64, y: f64) {
         let mut x_pos = x;
         // Compute extra_zoom as max of scale factors. Should look good in every situation I think.
-        let extra_zoom = 1.0 * f32::max(
-            self.draw_state.transform.sx.abs(),
-            self.draw_state.transform.sy.abs(),
-        );
+        let extra_zoom = 1.0
+            * f32::max(
+                self.draw_state.transform.sx.abs(),
+                self.draw_state.transform.sy.abs(),
+            );
         for ch in txt.chars() {
             let h_advance = self.fill_char(
                 ch as u32,
@@ -937,12 +980,10 @@ impl DrawContext {
 
     pub fn quadratic_curve_to(&mut self, x1: f64, y1: f64, x: f64, y: f64) {
         assert!(self.path.is_some());
-        self.path.as_mut().expect("path must be created").quad_to(
-            x1 as f32,
-            y1 as f32,
-            x as f32,
-            y as f32,
-        );
+        self.path
+            .as_mut()
+            .expect("path must be created")
+            .quad_to(x1 as f32, y1 as f32, x as f32, y as f32);
     }
 
     pub fn arc(
@@ -977,12 +1018,7 @@ impl DrawContext {
     pub fn bezier_curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x: f64, y: f64) {
         assert!(self.path.is_some());
         self.path.as_mut().expect("path must be created").cubic_to(
-            x1 as f32,
-            y1 as f32,
-            x2 as f32,
-            y2 as f32,
-            x as f32,
-            y as f32,
+            x1 as f32, y1 as f32, x2 as f32, y2 as f32, x as f32, y as f32,
         );
     }
 
@@ -1047,12 +1083,7 @@ impl DrawContext {
         paint.anti_alias = true;
         // Check for negative width/height, normalize
         self.surface.fill_rect(
-            normalized_rect(
-                x,
-                y,
-                width,
-                height,
-            ),
+            normalized_rect(x, y, width, height),
             &paint,
             self.draw_state.transform,
             None,
@@ -1067,13 +1098,7 @@ impl DrawContext {
         paint.anti_alias = true;
         paint.blend_mode = BlendMode::Source;
         self.surface.fill_rect(
-            Rect::from_xywh(
-                x as f32,
-                y as f32,
-                width as f32,
-                height as f32,
-            )
-            .unwrap(),
+            Rect::from_xywh(x as f32, y as f32, width as f32, height as f32).unwrap(),
             &paint,
             self.draw_state.transform,
             None,
@@ -1151,8 +1176,7 @@ export const s = "abc";
 export const f = (a, b) => (a + b) * 0.5;
 "#;
 
-pub struct CustomResolver {
-}
+pub struct CustomResolver {}
 
 impl Default for CustomResolver {
     fn default() -> Self {
@@ -1161,15 +1185,24 @@ impl Default for CustomResolver {
 }
 
 impl Resolver for CustomResolver {
-    fn resolve<'js>(&mut self, _ctx: &Ctx<'js>, base: &str, name: &str) -> rquickjs::Result<String> {
+    fn resolve<'js>(
+        &mut self,
+        _ctx: &Ctx<'js>,
+        base: &str,
+        name: &str,
+    ) -> rquickjs::Result<String> {
         if base == "vexflow_test_helpers" {
             // To import from fake vexflow_test_helpers.js, do a FileResolver::resolve with fake base.
-            return FileResolver::default().resolve(_ctx, "./vexflow/build/esm/tests/vexflow_test_helpers.js", name);
+            return FileResolver::default().resolve(
+                _ctx,
+                "./vexflow/build/esm/tests/vexflow_test_helpers.js",
+                name,
+            );
         }
         // Now check if we are importing the vexflow_test_helpers module.
         // Intercept anything that ends with vexflow_test_helpers to builtin module (absolute address)
         if name.ends_with("vexflow_test_helpers.js") || name.ends_with("vexflow_test_helpers") {
-            return Ok("vexflow_test_helpers".to_string())
+            return Ok("vexflow_test_helpers".to_string());
         } else {
             return Err(rquickjs::Error::new_resolving(base, name));
         }
@@ -1189,7 +1222,10 @@ fn main() {
     );
     let loader = (
         BuiltinLoader::default()
-            .with_module("vexflow_test_helpers", include_bytes!("./vexflow_test_helpers.js"))
+            .with_module(
+                "vexflow_test_helpers",
+                include_bytes!("./vexflow_test_helpers.js"),
+            )
             .with_module("wrap", include_bytes!("./wrap.js")),
         ScriptLoader::default(),
     );
