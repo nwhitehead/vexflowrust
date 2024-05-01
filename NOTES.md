@@ -99,14 +99,21 @@ For running the unit tests the Rust code swaps out
 
 ## VexFlow Issues I found:
 
-### Missing italic, bold-italic
+These are observations I made while rendering the test cases using my alternate
+Rust renderer (at https://github.com/nwhitehead/vexflowrust). These might be
+issues with VexFlow, or they might be deliberate design choices, I don't have
+enough context on expected behavior of VexFlow to say for sure. I thought they
+were worth mentioning since they only were observable through the alternate
+renderer.
 
-There is no font for italics defined by VexFlow. Some of the tests use italics
-prominently. The italic face doesn't seem to be present in the
-`@vexflow-fonts/academico` package. The Rust renderer uses separate fonts for
-regular, italic, bold, and bold italic for Academico.
+## Italic and Bold-Italic Fonts
 
-Example test that uses different styles:
+There is no font for italics defined by VexFlow (that I could find). Some of the
+tests do use italics. The italic and bold italic faces don't seem to be present
+in the `@vexflow-fonts/academico` package. The Rust renderer uses separate font
+files for regular, italic, bold, and bold italic for Academico.
+
+Example test that uses each different style:
 
 | Test | Style |
 | ---- | ----- |
@@ -114,7 +121,12 @@ Example test that uses different styles:
 | `Annotation::Fingerpicking` | italic |
 | `Beam::Complex Beams with Annotations` | bold italic |
 
-### Missing Unicode glyphs
+Looking at the generated SVG files can show what the actual font string is. For
+example, `svg_Annotation.Fingerpicking.Bravura.svg` draws the fingerings with
+`italic Bravura,Academico`. I like the look of italic Academico so the suggested
+fix here is to include the italic and bold italic faces for Academico.
+
+## Missing Unicode glyphs
 
 One missing glyph I found was `\u25B3` "White Up-Pointing Triangle". This
 codepoint was not found in Academico or Bravura. It was not in most other random
@@ -135,10 +147,15 @@ Academico or Bravura, but was present in many system fonts. In the Rust renderer
 I remapped this codepoint to SMuFL `\uE871` "csymHalfDiminished". I preferred
 that look.
 
-### Missing SMuFL glyphs
+For suggested fix: I'm not sure the best way to fix this. One way would be for
+Bravura to include more SMuFL glyphs in the regular unicode range to handle
+chords more nicely. Another fix could be for VexFlow to do a text replacement
+before drawing text.
 
-There were several other missing glyphs for codepoints referred to from tests.
-The set was:
+## Missing SMuFL glyphs
+
+There were several other missing glyphs for codepoints referred to from the test
+`Accidental::Cautionary Accidental` on output lines 8 and 16. The set was:
 
     \uE31A "accSagittalUnused1"
     \uE31B "accSagittalUnused2"
@@ -147,17 +164,25 @@ The set was:
 
 As of [SMuFL 1.5
 draft](https://w3c.github.io/smufl/latest/tables/spartan-sagittal-multi-shaft-accidentals.html)
-they are currently marked "Unused". The test using them is referring to them as
-unused, so showing nothing is expected for these codepoints. In the Rust
-renderer I mapped these to `\u0020` "Space" to avoid warnings about glyphs not
-found.
+they are currently marked "Unused". The VexFlow code using them is referring to
+them as unused in the glyph name. In the Rust renderer I mapped these to
+`\u0020` "Space" to avoid warnings about glyphs not found but to have the same
+output. You can see the missing spots in the current VexFlow test output on
+lines 8 and 16 (pairs of blank accidentals).
 
-### Sub-pixel alignment
+Suggested fix: maybe do nothing, maybe update cautionary accidental code, maybe
+update test. I'm not sure how Sagittal accidentals work and where the real issue
+is. But it does seem like trying to draw non-existent glyphs indicates a bug
+somewhere.
+
+## Sub-pixel alignment
 
 This is a personal preference thing. The default sub-pixel alignment used by the
 tests places staff lines between pixels. Anti-aliasing will draw these lines as
 equally gray 2 pixels wide. Shifting the global alignment vertically by 0.5
 pixels makes the lines hit the pixels directly and be drawn 1 pixel wide but
-darker. My preference is a vertical offset by 0.3 pixels which draws staff lines
-as one dark line and one light gray line adjacent. This looks sharper to me
-while still being smooth.
+darker. My personal preference is a vertical offset by 0.3 pixels which draws
+staff lines as one dark line and one light gray line adjacent. This looks
+sharper to me while still being smooth. Implementing this is one-line in setup:
+
+    ctx.translate(0, -0.3)
