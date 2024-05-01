@@ -1,3 +1,5 @@
+export RUST_BACKTRACE := "1"
+
 default:
     just --list
 
@@ -10,5 +12,6 @@ build:
     cargo build --release --manifest-path renderer/Cargo.toml --target-dir build
 
 test:
-    cargo test --release --manifest-path renderer/Cargo.toml --target-dir build --
-    cargo run --release --manifest-path renderer/Cargo.toml --target-dir build --
+    cargo test --release --manifest-path renderer/Cargo.toml --target-dir build
+    cargo run --release --manifest-path renderer/Cargo.toml --target-dir build
+    @echo "Testing done"

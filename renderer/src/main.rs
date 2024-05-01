@@ -36,11 +36,13 @@ use rquickjs::{
     loader::{BuiltinLoader, BuiltinResolver},
     Class, Context, Ctx, Error, Function, Runtime, Value,
 };
-use std::vec::Vec;
 use tiny_skia::{
     BlendMode, Color, FillRule, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint,
     PremultipliedColorU8, Rect, Stroke, Transform,
 };
+use std::vec::Vec;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::process::ExitCode;
 // use std::collections::HashMap;
 
 /// A library of fonts that are ready to use
@@ -1182,16 +1184,19 @@ fn path_join(path: String, more: String) -> String {
     return format!("{}", std::path::PathBuf::from(path).join(more).display());
 }
 
+/// Record whether JavaScript has requested program termination
+static OUTSTANDING_PANIC: AtomicBool = AtomicBool::new(false);
+
 fn panic(msg: String) {
-    println!("Panic from JS received: {}", msg);
-    println!("Thread {:?}", std::thread::current().id());
-    panic!("end");
+    // If we call actual panic!() here, it is within JavaScript context.
+    // The panic will be caught and turned into an exception somewhere internal.
+    OUTSTANDING_PANIC.store(true, Ordering::SeqCst);
 }
 
 #[derive(Debug)]
 struct CustomError(String);
 
-fn main() -> Result<(), CustomError> {
+fn main() -> ExitCode {
     let args = Cli::parse();
     // let vexflow_location_unicode = format!("{}", args.vexflow_location.display());
     // // The .display() part is lossy, non-unicode paths will not pass through.
@@ -1209,7 +1214,7 @@ fn main() -> Result<(), CustomError> {
             .with_module("@vexflow-debug-with-tests", include_bytes!("../../build/vexflow-debug-with-tests.js")),
     );
     runtime.set_loader(resolver, loader);
-    ctx.with(|ctx| {
+    if ctx.with(|ctx| {
         let global = ctx.globals();
         Class::<DrawContext>::define(&global).unwrap();
         Class::<FontMetrics>::define(&global).unwrap();
@@ -1224,35 +1229,29 @@ fn main() -> Result<(), CustomError> {
         match ctx.eval_with_options::<(), _>(script, options) {
             Err(Error::Exception) => {
                 println!("{}", format_exception(ctx.catch()));
-                return Err(CustomError(format!("Exception error")));
+                return Err(CustomError("Exception".to_string()));
             }
             Err(e) => {
                 println!("Error! {:?}", e);
-                return Err(CustomError(format!("Bad")));
+                return Err(CustomError("Exception".to_string()));
             }
             Ok(_) => Ok(()),
         }
-    })?;
+    }).is_err() {
+        return ExitCode::FAILURE;
+    }
     // Make sure to keep going until work is actually done
     while runtime.is_job_pending() {
+        if OUTSTANDING_PANIC.load(Ordering::SeqCst) {
+            return ExitCode::FAILURE;
+        }
         match runtime.execute_pending_job() {
             Ok(_) => (),
             Err(e) => {
                 println!("Error! {:?}", e);
-                return Err(CustomError(format!("Bad")));
+                return ExitCode::FAILURE;
             }
         }
-        ctx.with(|ctx| {
-            let last = ctx.catch();
-            println!("main() Thread {:?}", std::thread::current().id());
-            if last.is_null() {
-                println!("ctx.catch() is null, keep going");
-            } else {
-                println!("***** ctx.catch() is not null, keep going");
-
-            }
-        });
     }
-    println!("Got here");
-    Ok(())
+    ExitCode::SUCCESS
 }
