@@ -1182,7 +1182,16 @@ fn path_join(path: String, more: String) -> String {
     return format!("{}", std::path::PathBuf::from(path).join(more).display());
 }
 
-fn main() {
+fn panic(msg: String) {
+    println!("Panic from JS received: {}", msg);
+    println!("Thread {:?}", std::thread::current().id());
+    panic!("end");
+}
+
+#[derive(Debug)]
+struct CustomError(String);
+
+fn main() -> Result<(), CustomError> {
     let args = Cli::parse();
     // let vexflow_location_unicode = format!("{}", args.vexflow_location.display());
     // // The .display() part is lossy, non-unicode paths will not pass through.
@@ -1206,6 +1215,7 @@ fn main() {
         Class::<FontMetrics>::define(&global).unwrap();
         Class::<SpanFontParser>::define(&global).unwrap();
         register_function(ctx.clone(), "print", print);
+        register_function(ctx.clone(), "panic", panic);
         register_function(ctx.clone(), "path_join", path_join);
         let mut options = EvalOptions::default();
         options.global = false;
@@ -1214,20 +1224,35 @@ fn main() {
         match ctx.eval_with_options::<(), _>(script, options) {
             Err(Error::Exception) => {
                 println!("{}", format_exception(ctx.catch()));
-                panic!("Exception error");
+                return Err(CustomError(format!("Exception error")));
             }
             Err(e) => {
                 println!("Error! {:?}", e);
-                panic!("Error");
+                return Err(CustomError(format!("Bad")));
             }
-            Ok(_) => (),
+            Ok(_) => Ok(()),
         }
-    });
+    })?;
     // Make sure to keep going until work is actually done
     while runtime.is_job_pending() {
         match runtime.execute_pending_job() {
             Ok(_) => (),
-            Err(e) => println!("Error! {:?}", e),
+            Err(e) => {
+                println!("Error! {:?}", e);
+                return Err(CustomError(format!("Bad")));
+            }
         }
+        ctx.with(|ctx| {
+            let last = ctx.catch();
+            println!("main() Thread {:?}", std::thread::current().id());
+            if last.is_null() {
+                println!("ctx.catch() is null, keep going");
+            } else {
+                println!("***** ctx.catch() is not null, keep going");
+
+            }
+        });
     }
+    println!("Got here");
+    Ok(())
 }
