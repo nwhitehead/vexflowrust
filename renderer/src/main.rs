@@ -1187,17 +1187,17 @@ fn path_join(path: String, more: String) -> String {
 /// Record whether JavaScript has requested program termination
 static OUTSTANDING_PANIC: AtomicBool = AtomicBool::new(false);
 
-fn panic(msg: String) {
+fn panic(_msg: String) {
     // If we call actual panic!() here, it is within JavaScript context.
-    // The panic will be caught and turned into an exception somewhere internal.
+    // The panic would be caught and turned into an exception somewhere internal.
+    // Instead record that we need to panic, check the bool value later.
     OUTSTANDING_PANIC.store(true, Ordering::SeqCst);
 }
 
 #[derive(Debug)]
-struct CustomError(String);
+struct CustomError(());
 
 fn main() -> ExitCode {
-    let args = Cli::parse();
     // let vexflow_location_unicode = format!("{}", args.vexflow_location.display());
     // // The .display() part is lossy, non-unicode paths will not pass through.
     // let js_args = vec![&vexflow_location_unicode];
@@ -1229,13 +1229,13 @@ fn main() -> ExitCode {
         match ctx.eval_with_options::<(), _>(script, options) {
             Err(Error::Exception) => {
                 println!("{}", format_exception(ctx.catch()));
-                return Err(CustomError("Exception".to_string()));
+                return Err(CustomError(()));
             }
             Err(e) => {
                 println!("Error! {:?}", e);
-                return Err(CustomError("Exception".to_string()));
+                return Err(CustomError(()));
             }
-            Ok(_) => Ok(()),
+            Ok(_) => Ok(())
         }
     }).is_err() {
         return ExitCode::FAILURE;
