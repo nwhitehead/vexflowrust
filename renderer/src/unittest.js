@@ -2,12 +2,13 @@
 // Otherwise we don't see anything on broken imports.
 try {
     await import('@wrap');
-    let { VexFlow } = await import('@vexflow-debug-with-tests');
+    //let { VexFlow } = await import('@vexflow-debug-with-tests');
+    await import('@osmd');
 
     async function main() {
         console.log(`Running tests`);
-        VexFlow.Test.run();
-        console.log(`test result: \x1b[1m${QUnit.passed}\x1b[0m tests passed.`);
+        // VexFlow.Test.run();
+        // console.log(`test result: \x1b[1m${QUnit.passed}\x1b[0m tests passed.`);
     }
     await main();
 } catch(err) {

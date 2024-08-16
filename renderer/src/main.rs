@@ -1206,12 +1206,12 @@ fn main() -> ExitCode {
     let resolver = (
         BuiltinResolver::default()
             .with_module("@wrap")
-            .with_module("@vexflow-debug-with-tests"),
+            .with_module("@osmd"),
     );
     let loader = (
         BuiltinLoader::default()
             .with_module("@wrap", include_bytes!("./wrap.js"))
-            .with_module("@vexflow-debug-with-tests", include_bytes!("../../build/vexflow-debug-with-tests.js")),
+            .with_module("@osmd", include_bytes!("../../opensheetmusicdisplay/build/opensheetmusicdisplay.min.js")),
     );
     runtime.set_loader(resolver, loader);
     if ctx.with(|ctx| {

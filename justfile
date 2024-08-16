@@ -13,6 +13,9 @@ bundle:
 build:
     cargo build --release --manifest-path renderer/Cargo.toml --target-dir build
 
+build_osdm:
+    cd opensheetmusicdisplay && npm i && npm run build
+
 test:
     cargo test --release --manifest-path renderer/Cargo.toml --target-dir build
     cargo run --release --manifest-path renderer/Cargo.toml --target-dir build
