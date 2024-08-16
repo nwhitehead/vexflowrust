@@ -1225,6 +1225,7 @@ fn main() -> ExitCode {
         let mut options = EvalOptions::default();
         options.global = false;
         options.strict = true;
+        options.promise = true;
         let script = include_bytes!("./unittest.js");
         match ctx.eval_with_options::<(), _>(script, options) {
             Err(Error::Exception) => {

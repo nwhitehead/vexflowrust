@@ -32,6 +32,14 @@ globalThis.console = {
 // Should not need any methods (setTimeout etc.)
 globalThis.window = {};
 
+// Browsers provide structuredClone that does deep object copy
+// with transfer of tranferrable objects. Mock this to just
+// work on simple fonts and styles for now. Serialize/deserialize
+// method will fail on circular values, lots of other things.
+globalThis.structuredClone = function(value) {
+    return JSON.parse(JSON.stringify(value));
+}
+
 
 // When generating PNG images for the visual regression tests,
 // we mock out the QUnit methods (since we don't care about assertions).
