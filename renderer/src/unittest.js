@@ -3,10 +3,11 @@
 try {
     await import('@wrap');
     //let { VexFlow } = await import('@vexflow-debug-with-tests');
-    await import('@osmd');
+    let m = await import('@osmd');
 
     async function main() {
         console.log(`Running tests`);
+        console.log(m);
         // VexFlow.Test.run();
         // console.log(`test result: \x1b[1m${QUnit.passed}\x1b[0m tests passed.`);
     }

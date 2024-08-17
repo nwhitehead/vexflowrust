@@ -6,9 +6,10 @@
     "test": "cargo test --release --manifest-path renderer/Cargo.toml --target-dir build"
   },
   "devDependencies": {
-    "esbuild": "0.20.2"
+    "esbuild": "^0.20.2"
   },
   "dependencies": {
+    "esbuild-plugin-glsl": "^1.2.2",
     "just-install": "^2.0.1"
   }
 }

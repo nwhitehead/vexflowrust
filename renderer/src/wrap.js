@@ -113,6 +113,10 @@ globalThis.document = {
             const canvas = new Canvas(1, 1, 1.0, '#fff', '#000', false);
             return canvas;
         }
+        if (t === 'script') {
+            console.debug(`createElement('script')`);
+            return {};
+        }
         throw new Error(`Cannot create element '${t}', not supported`);
     }
 };

@@ -1211,7 +1211,7 @@ fn main() -> ExitCode {
     let loader = (
         BuiltinLoader::default()
             .with_module("@wrap", include_bytes!("./wrap.js"))
-            .with_module("@osmd", include_bytes!("../../opensheetmusicdisplay/build/opensheetmusicdisplay.min.js")),
+            .with_module("@osmd", include_bytes!("../../build/osdm.js")),
     );
     runtime.set_loader(resolver, loader);
     if ctx.with(|ctx| {
